@@ -30,11 +30,12 @@ def scrape_website(request: ScrapRequest):
 def summarize_website(request: SummaryRequest):
     result = website_summary_pipeline.summarize_website(request.url, request.summary_type)
     print(f"Generated {request.summary_type} summary for {request.url}:")
+    print(result)
     if 'ai_summary' in result:
         print(result['ai_summary'])
     else:
         print(f"Error: {result.get('error', 'Unknown error')}")
-    return result
+    return result["ai_summary"]
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
