@@ -1,7 +1,8 @@
 from fastapi import FastAPI
-from models import PromptRequest, ScrapRequest
+from models import PromptRequest, ScrapRequest, SummaryRequest
 from services.smolagents_pipeline import pipeline
 from services.scraper import scraper
+from services.website_summary_pipeline import website_summary_pipeline
 import uvicorn
 
 app = FastAPI()
@@ -23,6 +24,16 @@ def scrape_website(request: ScrapRequest):
     result = scraper.scrape_website(request.url)
     print(f"Scraped content from {request.url}:")
     print(result)
+    return result
+
+@app.post("/summarize")
+def summarize_website(request: SummaryRequest):
+    result = website_summary_pipeline.summarize_website(request.url, request.summary_type)
+    print(f"Generated {request.summary_type} summary for {request.url}:")
+    if 'ai_summary' in result:
+        print(result['ai_summary'])
+    else:
+        print(f"Error: {result.get('error', 'Unknown error')}")
     return result
 
 if __name__ == "__main__":
