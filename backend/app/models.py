@@ -10,3 +10,8 @@ class ScrapRequest(BaseModel):
 class SummaryRequest(BaseModel):
     url: str
     summary_type: Optional[str] = "general"
+
+class JobQuestionsRequest(BaseModel):
+    job_role: str
+    company_url: str
+    job_description: str
