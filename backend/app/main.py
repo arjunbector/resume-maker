@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware  # Add this import
 from models import PromptRequest, ScrapRequest, SummaryRequest, JobQuestionsRequest
 from services.smolagents_pipeline import pipeline
 from services.scraper import scraper
@@ -7,6 +8,15 @@ from services.job_questions_pipeline import job_questions_pipeline
 import uvicorn
 
 app = FastAPI()
+
+# Add CORS middleware to allow all origins
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allow all origins
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/")
 def root():
