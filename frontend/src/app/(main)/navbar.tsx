@@ -1,4 +1,3 @@
-"use client";
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "@/components/ui/theme-toggle";
 import logo from "@/public/globe.svg";
@@ -9,10 +8,13 @@ import { useTheme } from "next-themes";
 import Image from "next/image";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
+import SignIn from "@/components/sign-in";
+import { SignOut } from "@/components/sign-out";
+import { auth } from "@/auth";
 
-export default function Navbar() {
-  const { data: session, status } = useSession();
-  const { theme } = useTheme();
+export default async function Navbar() {
+  const session = await auth();
+
   //   const { userId } = useAuth();
   return (
     <header className="shadow-sm">
@@ -42,12 +44,8 @@ export default function Navbar() {
               />
             </UserButton.MenuItems>
           </UserButton> */}
-          {status == "loading" && <Loader2Icon className="animate-spin" />}
-          {status != "loading" && !session && (
-            <Button asChild>
-              <Link href="/sUserButtonign-in">Sign in</Link>
-            </Button>
-          )}
+          {session && <SignOut />}
+          {!session && <SignIn />}
         </div>
       </div>
     </header>
