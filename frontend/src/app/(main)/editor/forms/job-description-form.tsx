@@ -59,6 +59,10 @@ export default function JobDescriptionForm({
     },
     onSuccess: (data) => {
       toast.success("Job description processed successfully");
+      setResumeData({
+        ...resumeData,
+        questions:data.questions!
+      })
     },
     onError: (error) => {
       toast.error("Failed to process job description");

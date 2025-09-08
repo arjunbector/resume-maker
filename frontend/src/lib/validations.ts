@@ -7,6 +7,13 @@ export const genereInfoSchema = z.object({
     description: optionalString,
 });
 
+export type ResumeValues = {
+    generalInfo: GeneralInfoValues;
+    personalInfo: PersonalInfoValues;
+    jobDescription: JobDescriptionValues;
+    questions: QuestionAnswerValues[];
+};
+
 export type GeneralInfoValues = z.infer<typeof genereInfoSchema>;
 
 export const personalInfoSchema = z.object({
@@ -30,3 +37,15 @@ export const JobDescriptionSchema = z.object({
 })
 
 export type JobDescriptionValues = z.infer<typeof JobDescriptionSchema>;
+
+export type questionsValues = {
+    ques: string;
+    ans: string;
+}[]
+
+export const QuestionAnswerSchema = z.object({
+    ques: optionalString,
+    ans: optionalString
+})
+
+export type QuestionAnswerValues = z.infer<typeof QuestionAnswerSchema>
