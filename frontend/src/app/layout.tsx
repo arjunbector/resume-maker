@@ -7,21 +7,13 @@ import { ThemeProvider } from "next-themes";
 import Navbar from "./(main)/navbar";
 import { SessionProvider } from "next-auth/react";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: "ResumeAI - AI-Powered Resume Builder",
   description: "Create ATS-optimized resumes with AI. Import data from LinkedIn, GitHub, and other platforms. Get personalized recommendations and real-time feedback for your job applications.",
   keywords: ["resume builder", "AI resume", "ATS optimization", "job application", "career", "professional resume"],
-  authors: [{ name: "ResumeAI Team" }],
+  authors: [{ name: "Arjun Bector" }],
   creator: "ResumeAI",
   publisher: "ResumeAI",
   robots: {
@@ -35,25 +27,6 @@ export const metadata: Metadata = {
       'max-snippet': -1,
     },
   },
-  openGraph: {
-    type: 'website',
-    locale: 'en_US',
-    url: 'https://resumeai.com',
-    title: 'ResumeAI - AI-Powered Resume Builder',
-    description: 'Create ATS-optimized resumes with AI. Import data from LinkedIn, GitHub, and other platforms.',
-    siteName: 'ResumeAI',
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'ResumeAI - AI-Powered Resume Builder',
-    description: 'Create ATS-optimized resumes with AI. Import data from LinkedIn, GitHub, and other platforms.',
-    creator: '@resumeai',
-  },
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
-  },
 };
 
 export default function RootLayout({
@@ -64,7 +37,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={"antialiased"}
       >
         <SessionProvider>
           <Providers>

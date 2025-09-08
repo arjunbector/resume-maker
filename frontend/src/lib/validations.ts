@@ -23,6 +23,8 @@ export type PersonalInfoValues = z.infer<typeof personalInfoSchema>;
 
 export const JobDescriptionSchema = z.object({
     applyingJobTitle: optionalString,
+    companyName: optionalString,
+    companyWebsite: optionalString,
     jobDescriptionString: optionalString,
     jobDescriptionFile: z.instanceof(File).optional()
 })
