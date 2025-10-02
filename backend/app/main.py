@@ -1,7 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware  
 from models import PromptRequest, JobQuestionsRequest
-from services.smolagents_pipeline import pipeline
 from services.pipeline import JobQuestionsPipeline
 from utils.prompt import generate_prompt
 from utils.questions import parse_questions
@@ -22,15 +21,7 @@ app.add_middleware(
 
 @app.get("/")
 def root():
-    response = pipeline.process_prompt(
-        "Give me a cheeky one line ping message for my API. Only give me the message, no other text."
-    )
-    return {"message": f"{response}"}
-
-@app.post("/process")
-def process_prompt(request: PromptRequest):
-    response = pipeline.process_prompt(request.prompt)
-    return {"response": response}
+    return {"message": "Ping Pong!"}
 
 @app.post("/job-questions")
 def generate_job_questions(request: JobQuestionsRequest):
