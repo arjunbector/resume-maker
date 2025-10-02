@@ -2,12 +2,14 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware  
 from models import PromptRequest, JobQuestionsRequest
 from services.smolagents_pipeline import pipeline
-
 from services.pipeline import JobQuestionsPipeline
 from utils.prompt import generate_prompt
+from utils.questions import parse_questions
 import uvicorn
 
 app = FastAPI()
+
+pipeline = JobQuestionsPipeline(model="gemini/gemini-2.5-flash")
 
 # Add CORS middleware to allow all origins
 app.add_middleware(
@@ -30,38 +32,45 @@ def process_prompt(request: PromptRequest):
     response = pipeline.process_prompt(request.prompt)
     return {"response": response}
 
-# @app.post("/job-questions")
-# def generate_job_questions(request: JobQuestionsRequest):
-#     result = job_questions_pipeline.generate_questions(
-#         request.job_role, 
-#         request.company_url, 
-#         request.job_description
-#     )
-#     company_name = result.get('company_name', request.company_url)
-#     print(f"Generated {result.get('total_questions', 0)} questions for {request.job_role} at {company_name}:")
-#     if 'questions' in result and result['success']:
-#         for i, question in enumerate(result['questions'], 1):
-#             print(f"{i}. {question}")
-#         return {
-#             "questions": result['questions'],
-#             "total_questions": result.get('total_questions', 0),
-#             "job_role": result.get('job_role'),
-#             "company_name": result.get('company_name')
-#         }
-#     else:
-#         print(f"Error: {result.get('error', 'Unknown error')}")
-#         return {"error": result.get('error', 'Unknown error')}
+@app.post("/job-questions")
+def generate_job_questions(request: JobQuestionsRequest):
+    try:
+        # Generate the prompt from the request
+        prompt = generate_prompt(request)
+
+        # Run the agent with the tool
+        result = pipeline.agent.run(prompt)
+
+        # Parse questions from the result
+        questions = parse_questions(result)
+
+        # Log for debugging
+        print("ToolCallingAgent:", result)
+        print("Questions:", questions)
+
+        # Validate that we have questions
+        if not questions or len(questions) == 0:
+            return {
+                "error": "No questions could be generated from the response",
+                "raw_response": result
+            }
+
+        return {
+            "questions": questions,
+            "total_questions": len(questions),
+            "job_role": request.job_role,
+            "company_url": request.company_url
+        }
+
+    except Exception as e:
+        print(f"Error in job-questions endpoint: {str(e)}")
+        return {
+            "error": f"Failed to generate questions: {str(e)}",
+            "job_role": request.job_role,
+            "company_url": request.company_url
+        }
+
+    
 
 if __name__ == "__main__":
-
-    pipeline = JobQuestionsPipeline(model="gemini/gemini-2.5-flash")
-
-
-    req = JobQuestionsRequest(job_role="Firmware Developer", company_name="Ksham Innovation", company_url="https://kshaminnovation.in", job_description="We are looking for a firmware developer...")
-
-    prompt = generate_prompt(req)
-
-
-    print("ToolCallingAgent:", pipeline.agent.run(prompt))
-
-    # uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
+    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
