@@ -26,7 +26,17 @@ def get_website_content(website_url: str) -> str:
         session.headers.update({
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         })
-        response = session.get(website_url, timeout=10)
+
+        # Set max redirects to 5 to avoid redirect loops
+        session.max_redirects = 5
+
+        # Try the request with allow_redirects and verify SSL
+        response = session.get(
+            website_url,
+            timeout=10,
+            allow_redirects=True,
+            verify=True
+        )
         response.raise_for_status()
 
         # Parse the HTML
