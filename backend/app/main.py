@@ -1,9 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware  
-from models import PromptRequest
+from models import PromptRequest, JobQuestionsRequest
 from services.smolagents_pipeline import pipeline
 
 from services.pipeline import JobQuestionsPipeline
+from utils.prompt import generate_prompt
 import uvicorn
 
 app = FastAPI()
@@ -55,6 +56,12 @@ if __name__ == "__main__":
 
     pipeline = JobQuestionsPipeline(model="gemini/gemini-2.5-flash")
 
-    print("ToolCallingAgent:", pipeline.agent.run("Generate a brief description about the kshaminnovation.in website"))
+
+    req = JobQuestionsRequest(job_role="Firmware Developer", company_name="Ksham Innovation", company_url="https://kshaminnovation.in", job_description="We are looking for a firmware developer...")
+
+    prompt = generate_prompt(req)
+
+
+    print("ToolCallingAgent:", pipeline.agent.run(prompt))
 
     # uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)

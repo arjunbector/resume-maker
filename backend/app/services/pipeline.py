@@ -25,3 +25,4 @@ class JobQuestionsPipeline:
     @property
     def agent(self) -> ToolCallingAgent:
         return ToolCallingAgent(tools = [get_website_content], model = self.model)
+
