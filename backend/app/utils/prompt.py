@@ -12,7 +12,7 @@ Read a job description, job role, and company summary, then generate a tailored 
 **Job Role:** {req.job_role}
 **Company:** {req.company_name}
 **Job Description:** {req.job_description}
-**Company Details:** Use the company details fetched from the website by the get_website_content tool call.
+**Company Summary:** Use the company details fetched from the website by the get_website_content tool call.
 **Instructions:**
 
 1. Analyze context: Carefully review the job description, job role, and company summary to identify required skills, experiences, and cultural fit.
