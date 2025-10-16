@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware  
-from models import PromptRequest, JobQuestionsRequest
+from models import JobQuestionsRequest
 from services.pipeline import JobQuestionsPipeline
 from utils.prompt import generate_prompt
 from utils.questions import parse_questions
@@ -23,7 +23,7 @@ app.add_middleware(
 def root():
     return {"message": "Ping Pong!"}
 
-@app.post("/job-questions")
+@app.post("/api/v1/job-questions")
 def generate_job_questions(request: JobQuestionsRequest):
     try:
         # Generate the prompt from the request
@@ -64,4 +64,4 @@ def generate_job_questions(request: JobQuestionsRequest):
     
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
