@@ -1,13 +1,14 @@
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware  # Add this import
-from models import PromptRequest, ScrapRequest, SummaryRequest, JobQuestionsRequest
-from services.smolagents_pipeline import pipeline
-from services.scraper import scraper
-from services.website_summary_pipeline import website_summary_pipeline
-from services.job_questions_pipeline import job_questions_pipeline
+from fastapi.middleware.cors import CORSMiddleware  
+from models import JobQuestionsRequest
+from services.pipeline import JobQuestionsPipeline
+from utils.prompt import generate_prompt
+from utils.questions import parse_questions
 import uvicorn
 
 app = FastAPI()
+
+pipeline = JobQuestionsPipeline(model="gemini/gemini-2.5-flash")
 
 # Add CORS middleware to allow all origins
 app.add_middleware(
@@ -20,55 +21,47 @@ app.add_middleware(
 
 @app.get("/")
 def root():
-    response = pipeline.process_prompt(
-        "Give me a cheeky one line ping message for my API. Only give me the message, no other text."
-    )
-    return {"message": f"{response}"}
+    return {"message": "Ping Pong!"}
 
-@app.post("/process")
-def process_prompt(request: PromptRequest):
-    response = pipeline.process_prompt(request.prompt)
-    return {"response": response}
-
-@app.post("/scrape")
-def scrape_website(request: ScrapRequest):
-    result = scraper.scrape_website(request.url)
-    print(f"Scraped content from {request.url}:")
-    print(result)
-    return result
-
-@app.post("/summarize")
-def summarize_website(request: SummaryRequest):
-    result = website_summary_pipeline.summarize_website(request.url, request.summary_type)
-    print(f"Generated {request.summary_type} summary for {request.url}:")
-    print(result)
-    if 'ai_summary' in result:
-        print(result['ai_summary'])
-    else:
-        print(f"Error: {result.get('error', 'Unknown error')}")
-    return result["ai_summary"]
-
-@app.post("/job-questions")
+@app.post("/api/v1/job-questions")
 def generate_job_questions(request: JobQuestionsRequest):
-    result = job_questions_pipeline.generate_questions(
-        request.job_role, 
-        request.company_url, 
-        request.job_description
-    )
-    company_name = result.get('company_name', request.company_url)
-    print(f"Generated {result.get('total_questions', 0)} questions for {request.job_role} at {company_name}:")
-    if 'questions' in result and result['success']:
-        for i, question in enumerate(result['questions'], 1):
-            print(f"{i}. {question}")
+    try:
+        # Generate the prompt from the request
+        prompt = generate_prompt(request)
+
+        # Run the agent with the tool
+        result = pipeline.agent.run(prompt)
+
+        # Parse questions from the result
+        questions = parse_questions(result)
+
+        # Log for debugging
+        print("ToolCallingAgent:", result)
+        print("Questions:", questions)
+
+        # Validate that we have questions
+        if not questions or len(questions) == 0:
+            return {
+                "error": "No questions could be generated from the response",
+                "raw_response": result
+            }
+
         return {
-            "questions": result['questions'],
-            "total_questions": result.get('total_questions', 0),
-            "job_role": result.get('job_role'),
-            "company_name": result.get('company_name')
+            "questions": questions,
+            "total_questions": len(questions),
+            "job_role": request.job_role,
+            "company_url": request.company_url
         }
-    else:
-        print(f"Error: {result.get('error', 'Unknown error')}")
-        return {"error": result.get('error', 'Unknown error')}
+
+    except Exception as e:
+        print(f"Error in job-questions endpoint: {str(e)}")
+        return {
+            "error": f"Failed to generate questions: {str(e)}",
+            "job_role": request.job_role,
+            "company_url": request.company_url
+        }
+
+    
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
