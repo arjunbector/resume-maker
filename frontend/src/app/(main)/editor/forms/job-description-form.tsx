@@ -13,6 +13,7 @@ import { EditorFormProps } from "@/lib/types";
 import { JobDescriptionSchema, JobDescriptionValues } from "@/lib/validations";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -32,6 +33,7 @@ export default function JobDescriptionForm({
       jobDescriptionFile: resumeData.jobDescriptionFile,
     },
   });
+  const router = useRouter();
 
   const { isPending, mutate } = useMutation({
     mutationFn: async (values: JobDescriptionValues) => {
@@ -61,8 +63,14 @@ export default function JobDescriptionForm({
       toast.success("Job description processed successfully");
       setResumeData({
         ...resumeData,
-        questions:data.questions!
-      })
+        questions: data.questions
+          ? data.questions.map((q: string) => ({
+              ques: q,
+              ans: "",
+            }))
+          : [],
+      });
+      router.push("/editor?step=questionnaire");
     },
     onError: (error) => {
       toast.error("Failed to process job description");

@@ -16,7 +16,29 @@ import { ResumeValues } from "@/lib/validations";
 export default function ResumeEditor() {
   const searchParams = useSearchParams();
 
-  const [resumeData, setResumeData] = useState<ResumeValues | {}>({});
+  const [resumeData, setResumeData] = useState<ResumeValues>({
+    generalInfo: {
+      title: "",
+      description: "",
+    },
+    personalInfo: {
+      firstName: "",
+      lastName: "",
+      jobTitle: "",
+      city: "",
+      country: "",
+      phone: "",
+      email: "",
+    },
+    jobDescription: {
+      applyingJobTitle: "",
+      companyName: "",
+      companyWebsite: "",
+      jobDescriptionString: "",
+      jobDescriptionFile: undefined,
+    },
+    questions: [],
+  });
   console.log(resumeData);
   const [showSmResumePreview, setShowSmResumePreview] = useState(false);
 
@@ -49,12 +71,12 @@ export default function ResumeEditor() {
             )}
           >
             <BreadCrumbs currentStep={currentStep} setCurrentStep={setStep} />
-            {FormComponent && (
+            {FormComponent ? (
               <FormComponent
                 resumeData={resumeData}
                 setResumeData={setResumeData}
               />
-            )}
+            ) : null}
           </div>
           <div className="grow md:border-r" />
           <ResumePreviewSection
