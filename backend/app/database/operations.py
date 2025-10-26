@@ -1,8 +1,9 @@
 from loguru import logger
 from database.client import mongodb
-from database.models import User
+from database.models import User, Session, ResumeState, Questionnaire
 from uuid import uuid4
 from typing import Dict, Any, Optional
+from datetime import datetime
 
 class UserOperations:
     @staticmethod
@@ -58,4 +59,41 @@ class UserOperations:
             "message": "User updated successfully",
             "email": email,
             "modified_count": result.modified_count
+        }
+
+class SessionOperations:
+    @staticmethod
+    def create_session(user_id: str, job_details) -> Dict[str, str]:
+        """Create a new session for a user"""
+        # Check if user exists
+        user = mongodb.db.users.find_one({"user_id": user_id})
+        if not user:
+            logger.warning(f"User with id {user_id} not found")
+            raise ValueError("User not found")
+
+        # Generate session_id
+        session_id = str(uuid4())
+
+        # Create session with default values
+        now = datetime.utcnow()
+        session = Session(
+            session_id=session_id,
+            user_id=user_id,
+            job_details=job_details,
+            resume_state=ResumeState(status="incomplete", missing_fields=[]),
+            questionnaire=Questionnaire(questions=[], answers={}),
+            last_active=now,
+            created_at=now
+        )
+
+        # Insert session into database
+        session_dict = session.model_dump()
+        mongodb.db.sessions.insert_one(session_dict)
+
+        logger.info(f"Session created successfully with id: {session_id}")
+
+        return {
+            "message": "Session created successfully",
+            "session_id": session_id,
+            "user_id": user_id
         }

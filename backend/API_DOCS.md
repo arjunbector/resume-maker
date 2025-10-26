@@ -78,6 +78,42 @@ Update user fields by email.
 
 ---
 
+### Sessions
+
+#### Create Session
+**POST** `/api/v1/sessions`
+
+Create a new session for a user with job details.
+
+**Query Parameters:**
+- `user_id` (required) - User's ID
+
+**Request Body:**
+```json
+{
+  "job_role": "string",
+  "company_name": "string",
+  "company_url": "string",
+  "job_description": "string"
+}
+```
+
+**Response:**
+```json
+{
+  "message": "Session created successfully",
+  "session_id": "string",
+  "user_id": "string"
+}
+```
+
+**Status Codes:**
+- `200` - Session created successfully
+- `400` - User not found
+- `500` - Server error
+
+---
+
 ### Job Questions
 
 #### Generate Job Questions

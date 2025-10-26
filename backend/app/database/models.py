@@ -5,11 +5,14 @@ from datetime import datetime
 class PromptRequest(BaseModel):
     prompt: str
 
-class JobQuestionsRequest(BaseModel):
+class JobDetails(BaseModel):
     job_role: str
     company_name: str
     company_url: str
     job_description: str
+
+# Alias for backward compatibility
+JobQuestionsRequest = JobDetails
 
 class ResumeState(BaseModel):
     status: str
@@ -30,7 +33,7 @@ class User(BaseModel):
 class Session(BaseModel):
     session_id: str
     user_id: str
-    job_details: Dict
+    job_details: JobDetails
     resume_state: ResumeState
     questionnaire: Questionnaire
     last_active: datetime
