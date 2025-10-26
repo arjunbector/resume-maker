@@ -7,6 +7,8 @@ requires-python = ">=3.13"
 dependencies = [
     "beautifulsoup4>=4.13.5",
     "fastapi>=0.116.1",
+    "loguru>=0.7.3",
+    "pymongo>=4.15.3",
     "python-dotenv>=1.1.1",
     "smolagents[litellm]>=1.21.3",
     "uvicorn>=0.35.0",

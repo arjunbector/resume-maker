@@ -1,4 +1,4 @@
-from models import JobQuestionsRequest
+from database.models import JobQuestionsRequest
 
 
 def generate_prompt(req: JobQuestionsRequest) -> str:

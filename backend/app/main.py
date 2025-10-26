@@ -1,12 +1,21 @@
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware  
+from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
+from loguru import logger
 from database.models import JobQuestionsRequest
+from database.client import mongodb
 from services.pipeline import JobQuestionsPipeline
 from utils.prompt import generate_prompt
 from utils.questions import parse_questions
 import uvicorn
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    mongodb.connect()
+    yield
+    mongodb.close()
+
+app = FastAPI(lifespan=lifespan)
 
 pipeline = JobQuestionsPipeline(model="gemini/gemini-2.5-flash")
 
@@ -26,6 +35,8 @@ def root():
 @app.post("/api/v1/job-questions")
 def generate_job_questions(request: JobQuestionsRequest):
     try:
+        logger.info(f"Generating job questions for role: {request.job_role} at {request.company_name}")
+
         # Generate the prompt from the request
         prompt = generate_prompt(request)
 
@@ -35,12 +46,12 @@ def generate_job_questions(request: JobQuestionsRequest):
         # Parse questions from the result
         questions = parse_questions(result)
 
-        # Log for debugging
-        print("ToolCallingAgent:", result)
-        print("Questions:", questions)
+        logger.debug(f"ToolCallingAgent result: {result}")
+        logger.info(f"Generated {len(questions)} questions")
 
         # Validate that we have questions
         if not questions or len(questions) == 0:
+            logger.warning("No questions could be generated from the response")
             return {
                 "error": "No questions could be generated from the response",
                 "raw_response": result
@@ -54,7 +65,7 @@ def generate_job_questions(request: JobQuestionsRequest):
         }
 
     except Exception as e:
-        print(f"Error in job-questions endpoint: {str(e)}")
+        logger.error(f"Error in job-questions endpoint: {str(e)}")
         return {
             "error": f"Failed to generate questions: {str(e)}",
             "job_role": request.job_role,
