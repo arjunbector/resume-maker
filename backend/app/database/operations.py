@@ -97,3 +97,33 @@ class SessionOperations:
             "session_id": session_id,
             "user_id": user_id
         }
+
+    @staticmethod
+    def update_session(session_id: str, updates: Dict[str, Any]) -> Dict[str, Any]:
+        """Update session fields by session_id"""
+        # Check if session exists
+        existing_session = mongodb.db.sessions.find_one({"session_id": session_id})
+        if not existing_session:
+            logger.warning(f"Session with id {session_id} not found")
+            raise ValueError("Session not found")
+
+        # Remove session_id from updates if present (can't update session_id)
+        if "session_id" in updates:
+            del updates["session_id"]
+
+        # Update last_active timestamp
+        updates["last_active"] = datetime.utcnow()
+
+        # Update session in database
+        result = mongodb.db.sessions.update_one(
+            {"session_id": session_id},
+            {"$set": updates}
+        )
+
+        logger.info(f"Session updated successfully: {session_id}")
+
+        return {
+            "message": "Session updated successfully",
+            "session_id": session_id,
+            "modified_count": result.modified_count
+        }

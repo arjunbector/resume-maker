@@ -112,6 +112,52 @@ Create a new session for a user with job details.
 - `400` - User not found
 - `500` - Server error
 
+#### Update Session
+**PUT** `/api/v1/sessions`
+
+Update session fields by session_id.
+
+**Query Parameters:**
+- `session_id` (required) - Session ID
+
+**Request Body:**
+```json
+{
+  "job_details": {
+    "job_role": "string",
+    "company_name": "string",
+    "company_url": "string",
+    "job_description": "string"
+  },
+  "resume_state": {
+    "status": "string",
+    "missing_fields": ["string"]
+  },
+  "questionnaire": {
+    "questions": ["string"],
+    "answers": {
+      "question": "answer"
+    }
+  }
+}
+```
+
+*Note: `session_id` cannot be updated. `last_active` is automatically updated.*
+
+**Response:**
+```json
+{
+  "message": "Session updated successfully",
+  "session_id": "string",
+  "modified_count": 1
+}
+```
+
+**Status Codes:**
+- `200` - Session updated successfully
+- `404` - Session not found
+- `500` - Server error
+
 ---
 
 ### Job Questions
