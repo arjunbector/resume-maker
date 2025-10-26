@@ -40,6 +40,42 @@ Create a new user with personal details.
 - `400` - User with email already exists
 - `500` - Server error
 
+#### Update User
+**PUT** `/api/v1/users`
+
+Update user fields by email.
+
+**Query Parameters:**
+- `email` (required) - User's email address
+
+**Request Body:**
+```json
+{
+  "name": "string",
+  "phone": "string",
+  "socials": {
+    "linkedin": "string"
+  },
+  "address": "string"
+}
+```
+
+*Note: `email` and `user_id` cannot be updated.*
+
+**Response:**
+```json
+{
+  "message": "User updated successfully",
+  "email": "string",
+  "modified_count": 1
+}
+```
+
+**Status Codes:**
+- `200` - User updated successfully
+- `404` - User not found
+- `500` - Server error
+
 ---
 
 ### Job Questions
