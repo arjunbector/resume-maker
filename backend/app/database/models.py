@@ -11,13 +11,6 @@ class JobQuestionsRequest(BaseModel):
     company_url: str
     job_description: str
 
-class PersonalDetails(BaseModel):
-    name: str
-    email: str
-    phone: str
-    socials: Dict[str, str]
-    address: str
-
 class ResumeState(BaseModel):
     status: str
     missing_fields: List[str]
@@ -26,10 +19,17 @@ class Questionnaire(BaseModel):
     questions: List[str]
     answers: Dict[str, str]
 
+class User(BaseModel):
+    user_id: str
+    name: str
+    email: str
+    phone: str
+    socials: Dict[str, str]
+    address: str
+
 class Session(BaseModel):
     session_id: str
     user_id: str
-    personal_details: PersonalDetails
     job_details: Dict
     resume_state: ResumeState
     questionnaire: Questionnaire
