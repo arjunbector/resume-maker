@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware  
-from models import JobQuestionsRequest
+from database.models import JobQuestionsRequest
 from services.pipeline import JobQuestionsPipeline
 from utils.prompt import generate_prompt
 from utils.questions import parse_questions
