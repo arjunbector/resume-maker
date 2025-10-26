@@ -7,6 +7,7 @@ from database.client import mongodb
 from services.pipeline import JobQuestionsPipeline
 from utils.prompt import generate_prompt
 from utils.questions import parse_questions
+from routers import users
 import uvicorn
 
 @asynccontextmanager
@@ -18,6 +19,9 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 pipeline = JobQuestionsPipeline(model="gemini/gemini-2.5-flash")
+
+# Include routers
+app.include_router(users.router)
 
 # Add CORS middleware to allow all origins
 app.add_middleware(

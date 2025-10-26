@@ -20,7 +20,7 @@ class Questionnaire(BaseModel):
     answers: Dict[str, str]
 
 class User(BaseModel):
-    user_id: str
+    user_id: Optional[str] = None
     name: str
     email: str
     phone: str
