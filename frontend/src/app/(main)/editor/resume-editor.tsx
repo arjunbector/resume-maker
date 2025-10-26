@@ -7,6 +7,7 @@ import ResumePreviewSection from "./resume-preview-section";
 import { steps } from "./steps";
 import BreadCrumbs from "./bread-crumbs";
 import Footer from "./footer";
+import { ResumeValues } from "@/lib/validations";
 
 // interface ResumeEditorProps {
 //   resumeToEdit: ResumeServerData | null;
@@ -15,7 +16,29 @@ import Footer from "./footer";
 export default function ResumeEditor() {
   const searchParams = useSearchParams();
 
-  const [resumeData, setResumeData] = useState({});
+  const [resumeData, setResumeData] = useState<ResumeValues>({
+    generalInfo: {
+      title: "",
+      description: "",
+    },
+    personalInfo: {
+      firstName: "",
+      lastName: "",
+      jobTitle: "",
+      city: "",
+      country: "",
+      phone: "",
+      email: "",
+    },
+    jobDescription: {
+      applyingJobTitle: "",
+      companyName: "",
+      companyWebsite: "",
+      jobDescriptionString: "",
+      jobDescriptionFile: undefined,
+    },
+    questions: [],
+  });
   console.log(resumeData);
   const [showSmResumePreview, setShowSmResumePreview] = useState(false);
 
@@ -48,12 +71,12 @@ export default function ResumeEditor() {
             )}
           >
             <BreadCrumbs currentStep={currentStep} setCurrentStep={setStep} />
-            {FormComponent && (
+            {FormComponent ? (
               <FormComponent
                 resumeData={resumeData}
                 setResumeData={setResumeData}
               />
-            )}
+            ) : null}
           </div>
           <div className="grow md:border-r" />
           <ResumePreviewSection
@@ -70,6 +93,7 @@ export default function ResumeEditor() {
         showSmResumePreview={showSmResumePreview}
         isSaving={isSaving}
       /> */}
+      <Footer currentStep={currentStep} setCurrentStep={setStep} />
     </div>
   );
 }

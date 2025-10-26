@@ -4,6 +4,7 @@ import React from "react";
 import GeneralInfoForm from "./forms/general-info-form";
 import JobDescriptionForm from "./forms/job-description-form";
 import PersonalInfoForm from "./forms/personal-info-form";
+import QuestionnaireForm from "./forms/questionnaire-form";
 
 export const steps: {
   title: string;
@@ -24,6 +25,11 @@ export const steps: {
     title: "Job Description",
     component: JobDescriptionForm,
     key: "job-description",
+  },
+  {
+    title: "Questionnaire",
+    component: QuestionnaireForm,
+    key: "questionnaire",
   },
   //   {
   //     title: "Work Experience",

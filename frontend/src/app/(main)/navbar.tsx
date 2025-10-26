@@ -1,16 +1,11 @@
-import { Button } from "@/components/ui/button";
 import ThemeToggle from "@/components/ui/theme-toggle";
-import logo from "@/public/globe.svg";
 // import { useAuth, UserButton } from "@clerk/nextjs";
 // import { dark } from "@clerk/themes";
-import { BrainCircuitIcon, CreditCardIcon, Loader2Icon } from "lucide-react";
-import { useTheme } from "next-themes";
-import Image from "next/image";
-import Link from "next/link";
-import { useSession } from "next-auth/react";
+import { auth } from "@/auth";
 import SignIn from "@/components/sign-in";
 import { SignOut } from "@/components/sign-out";
-import { auth } from "@/auth";
+import { BrainCircuitIcon } from "lucide-react";
+import Link from "next/link";
 
 export default async function Navbar() {
   const session = await auth();

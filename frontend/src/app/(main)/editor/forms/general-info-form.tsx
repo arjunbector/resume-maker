@@ -22,8 +22,8 @@ export default function GeneralInfoForm({
   const form = useForm<GeneralInfoValues>({
     resolver: zodResolver(genereInfoSchema),
     defaultValues: {
-      title: resumeData.title || "",
-      description: resumeData.description || "",
+      title: resumeData.generalInfo.title || "",
+      description: resumeData.generalInfo.description || "",
     },
     mode: "onChange", // Enable validation on change
   });
