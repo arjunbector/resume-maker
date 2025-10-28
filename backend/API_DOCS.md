@@ -7,6 +7,33 @@
 
 ### Users
 
+#### Get User
+**GET** `/api/v1/users`
+
+Get user by email.
+
+**Query Parameters:**
+- `email` (required) - User's email address
+
+**Response:**
+```json
+{
+  "user_id": "string",
+  "name": "string",
+  "email": "string",
+  "phone": "string",
+  "socials": {
+    "linkedin": "string"
+  },
+  "address": "string"
+}
+```
+
+**Status Codes:**
+- `200` - User found
+- `404` - User not found
+- `500` - Server error
+
 #### Create User
 **POST** `/api/v1/users`
 

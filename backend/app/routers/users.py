@@ -6,6 +6,18 @@ from typing import Dict, Any
 
 router = APIRouter(prefix="/api/v1/users", tags=["users"])
 
+@router.get("")
+def get_user(email: str):
+    try:
+        logger.info(f"Fetching user with email: {email}")
+        result = UserOperations.get_user(email)
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error fetching user: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch user: {str(e)}")
+
 @router.post("")
 def create_user(user: User):
     try:

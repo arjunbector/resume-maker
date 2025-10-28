@@ -7,6 +7,20 @@ from datetime import datetime
 
 class UserOperations:
     @staticmethod
+    def get_user(email: str) -> Dict[str, Any]:
+        """Get user by email"""
+        user = mongodb.db.users.find_one({"email": email})
+        if not user:
+            logger.warning(f"User with email {email} not found")
+            raise ValueError("User not found")
+
+        # Remove MongoDB _id field
+        user.pop("_id", None)
+
+        logger.info(f"User fetched successfully: {email}")
+        return user
+
+    @staticmethod
     def create_user(user: User) -> Dict[str, str]:
         """Create a new user in the database"""
         # Check if user already exists
