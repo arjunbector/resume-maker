@@ -298,12 +298,77 @@ Add one or multiple items to different categories of the user's knowledge graph.
 }
 ```
 
+**Recommended Schemas for Knowledge Graph Items:**
+
+**Education:**
+```json
+{
+  "institution": "Stanford University",
+  "degree": "Bachelor of Science",
+  "field": "Computer Science",
+  "start_date": "2018-09",
+  "end_date": "2022-06"
+}
+```
+
+**Work Experience:**
+```json
+{
+  "company": "Google",
+  "position": "Software Engineer",
+  "start_date": "2022-07",
+  "end_date": "present",
+  "description": "Brief description of responsibilities"
+}
+```
+
+**Projects:**
+```json
+{
+  "name": "Resume Builder",
+  "description": "AI-powered resume builder",
+  "technologies": ["Python", "FastAPI", "MongoDB"]
+}
+```
+
+**Certifications:**
+```json
+{
+  "name": "AWS Certified Solutions Architect",
+  "issuer": "Amazon Web Services",
+  "date": "2023-05"
+}
+```
+
+**Research Work:**
+```json
+{
+  "title": "Machine Learning for NLP",
+  "venue": "IEEE Conference",
+  "date": "2023-08"
+}
+```
+
+**Skills:**
+```json
+["Python", "JavaScript", "Docker", "Machine Learning"]
+```
+
+**Misc:**
+```json
+{
+  "languages": ["English", "Spanish"],
+  "awards": ["Best Employee 2023"]
+}
+```
+
 **Notes:**
 - All fields are optional - you can update one or multiple categories
 - Items are **appended** to existing data (not replaced)
 - For skills: duplicates are automatically avoided
 - For misc: dictionary values are merged with existing misc data
 - You can add a single item or multiple items to each category
+- The schemas above are recommended but flexible - you can include additional fields as needed
 
 **Example - Adding only skills:**
 ```json
