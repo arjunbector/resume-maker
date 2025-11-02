@@ -30,6 +30,15 @@ class LoginRequest(BaseModel):
     email: str
     password: str
 
+class KnowledgeGraph(BaseModel):
+    education: List[Dict] = []
+    work_experience: List[Dict] = []
+    research_work: List[Dict] = []
+    projects: List[Dict] = []
+    certifications: List[Dict] = []
+    skills: List[str] = []
+    misc: Dict = {}
+
 class User(BaseModel):
     user_id: Optional[str] = None
     name: Optional[str] = ""
@@ -38,6 +47,7 @@ class User(BaseModel):
     phone: Optional[str] = ""
     socials: Optional[Dict[str, str]] = {}
     address: Optional[str] = ""
+    knowledge_graph: Optional[KnowledgeGraph] = KnowledgeGraph()
 
 class UserResponse(BaseModel):
     user_id: str
@@ -46,6 +56,7 @@ class UserResponse(BaseModel):
     phone: str
     socials: Dict[str, str]
     address: str
+    knowledge_graph: KnowledgeGraph
 
 class Session(BaseModel):
     session_id: str

@@ -62,7 +62,7 @@ The application follows a modular FastAPI architecture with clear separation of 
 
 **Database Layer** ([app/database/](app/database/))
 - `client.py` - MongoDB singleton connection manager
-- `models.py` - Pydantic models for data validation (User, Session, JobDetails, ResumeState, Questionnaire)
+- `models.py` - Pydantic models for data validation (User, Session, JobDetails, ResumeState, Questionnaire, KnowledgeGraph)
 - `operations.py` - Database operations abstracted into UserOperations and SessionOperations classes
 
 **API Routers** ([app/routers/](app/routers/))
@@ -87,6 +87,17 @@ The application follows a modular FastAPI architecture with clear separation of 
 - email, hashed_password (bcrypt)
 - name, phone, address (optional fields with defaults)
 - socials (dict for LinkedIn, etc.)
+- knowledge_graph (KnowledgeGraph object with user's professional details)
+
+**KnowledgeGraph Model:**
+Structured storage for user's professional information:
+- education (list of education records)
+- work_experience (list of work history)
+- research_work (list of research projects)
+- projects (list of personal/professional projects)
+- certifications (list of certifications)
+- skills (list of skills)
+- misc (dict for any additional information)
 
 **Session Model:**
 - session_id, user_id (UUIDs)

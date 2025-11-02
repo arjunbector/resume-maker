@@ -103,7 +103,16 @@ Supports both cookie-based and header-based authentication.
   "socials": {
     "linkedin": "string"
   },
-  "address": "string"
+  "address": "string",
+  "knowledge_graph": {
+    "education": [],
+    "work_experience": [],
+    "research_work": [],
+    "projects": [],
+    "certifications": [],
+    "skills": [],
+    "misc": {}
+  }
 }
 ```
 
@@ -151,7 +160,16 @@ Get user by email.
   "socials": {
     "linkedin": "string"
   },
-  "address": "string"
+  "address": "string",
+  "knowledge_graph": {
+    "education": [],
+    "work_experience": [],
+    "research_work": [],
+    "projects": [],
+    "certifications": [],
+    "skills": [],
+    "misc": {}
+  }
 }
 ```
 
@@ -176,11 +194,37 @@ Update user fields by email.
   "socials": {
     "linkedin": "string"
   },
-  "address": "string"
+  "address": "string",
+  "knowledge_graph": {
+    "education": [
+      {
+        "institution": "string",
+        "degree": "string",
+        "field": "string",
+        "start_date": "string",
+        "end_date": "string",
+        "gpa": "string"
+      }
+    ],
+    "work_experience": [
+      {
+        "company": "string",
+        "position": "string",
+        "start_date": "string",
+        "end_date": "string",
+        "description": "string"
+      }
+    ],
+    "research_work": [],
+    "projects": [],
+    "certifications": [],
+    "skills": ["Python", "JavaScript"],
+    "misc": {}
+  }
 }
 ```
 
-*Note: `email` and `user_id` cannot be updated.*
+*Note: `email`, `user_id`, and `hashed_password` cannot be updated. All fields are optional.*
 
 **Response:**
 ```json

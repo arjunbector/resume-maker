@@ -1,6 +1,6 @@
 from loguru import logger
 from database.client import mongodb
-from database.models import User, Session, ResumeState, Questionnaire
+from database.models import User, Session, ResumeState, Questionnaire, KnowledgeGraph
 from uuid import uuid4
 from typing import Dict, Any, Optional
 from datetime import datetime
@@ -48,7 +48,7 @@ class UserOperations:
         user_id = str(uuid4())
         hashed_password = hash_password(password)
 
-        # Create user with default values
+        # Create user with default values including empty knowledge_graph
         user = User(
             user_id=user_id,
             email=email,
@@ -56,7 +56,8 @@ class UserOperations:
             name="",
             phone="",
             socials={},
-            address=""
+            address="",
+            knowledge_graph=KnowledgeGraph()
         )
 
         # Insert user into database
@@ -99,13 +100,11 @@ class UserOperations:
             logger.warning(f"User with email {email} not found")
             raise ValueError("User not found")
 
-        # Remove email from updates if present (can't update email)
-        if "email" in updates:
-            del updates["email"]
-
-        # Remove user_id from updates if present (can't update user_id)
-        if "user_id" in updates:
-            del updates["user_id"]
+        # Remove protected fields from updates if present
+        protected_fields = ["email", "user_id", "hashed_password"]
+        for field in protected_fields:
+            if field in updates:
+                del updates[field]
 
         # Update user in database
         result = mongodb.db.users.update_one(
