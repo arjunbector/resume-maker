@@ -23,6 +23,12 @@ class AnalyzeJobRequest(BaseModel):
     session_id: Optional[str] = None  # Optional session to update with results
 
 
+class AnswerQuestionRequest(BaseModel):
+    session_id: str
+    question_id: str
+    answer: str
+
+
 @router.post("/custom")
 def run_custom_prompt(request: CustomPromptRequest, app_request: Request):
     """
@@ -347,4 +353,160 @@ def generate_questionnaire(
         raise HTTPException(
             status_code=500,
             detail=f"Failed to generate questionnaire: {str(e)}"
+        )
+
+
+@router.post("/answer-question")
+def answer_question(
+    request: AnswerQuestionRequest,
+    app_request: Request,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Submit an answer to a questionnaire question.
+
+    This endpoint processes the user's answer, updates the questionnaire,
+    and automatically adds relevant information to the user's knowledge graph.
+    """
+    try:
+        logger.info(f"Processing answer for question {request.question_id} in session {request.session_id}")
+
+        # Get the session
+        session = SessionOperations.get_session(request.session_id)
+
+        # Verify session belongs to current user
+        if session['user_id'] != current_user['user_id']:
+            raise HTTPException(status_code=403, detail="Not authorized to access this session")
+
+        # Get questionnaire from session
+        questionnaire = session.get('questionnaire', {})
+        questions = questionnaire.get('questions', [])
+
+        # Find the specific question
+        question_item = None
+        question_index = None
+        for idx, q in enumerate(questions):
+            if q.get('id') == request.question_id:
+                question_item = q
+                question_index = idx
+                break
+
+        if not question_item:
+            raise HTTPException(status_code=404, detail="Question not found in session")
+
+        # Check if question is already answered
+        if question_item.get('status') == 'answered':
+            logger.warning(f"Question {request.question_id} already answered, updating answer")
+
+        # Get the agent from app state
+        agent: ResumeAgent = app_request.app.state.agent
+
+        # Process the answer using AI to extract structured data
+        processing_result = agent.process_answer(
+            question=question_item.get('question', ''),
+            answer=request.answer,
+            related_field=question_item.get('related_field', ''),
+            field_type=question_item.get('field_type', 'misc')
+        )
+
+        logger.info(f"Answer processed: {processing_result.get('summary', '')}")
+
+        # Update the question with answer and confidence
+        question_item['answer'] = request.answer
+        question_item['confidence'] = processing_result.get('confidence', 0.5)
+        question_item['status'] = 'answered'
+        questions[question_index] = question_item
+
+        # Calculate completion percentage
+        answered_count = sum(1 for q in questions if q.get('status') == 'answered')
+        completion = (answered_count / len(questions)) * 100 if questions else 0
+
+        # Update session with new answer
+        session_updates = {
+            f"questionnaire.questions": questions,
+            f"questionnaire.completion": completion,
+            "resume_state.ai_context": {
+                "summary": f"Answered {answered_count}/{len(questions)} questions",
+                "total_questions": len(questions),
+                "questions_answered": answered_count,
+                "last_answer_summary": processing_result.get('summary', '')
+            },
+            "resume_state.last_action": "question_answered"
+        }
+
+        # If all questions are answered, advance stage
+        if completion >= 100:
+            session_updates["resume_state.stage"] = ResumeStage.READY_FOR_RESUME.value
+
+        SessionOperations.update_session(request.session_id, session_updates)
+
+        # Update user's knowledge graph with extracted information
+        kg_updates = processing_result.get('knowledge_graph_updates', {})
+        category = kg_updates.get('category')
+        data = kg_updates.get('data')
+
+        knowledge_graph_updated = False
+        if category and data:
+            try:
+                # Get current user data
+                user = UserOperations.get_user_by_id(current_user['user_id'])
+                current_kg = user.get('knowledge_graph', {})
+
+                # Prepare update based on category
+                kg_update_operations = {}
+
+                if category == 'skills' and isinstance(data, list) and len(data) > 0:
+                    # Add skills (deduplicate)
+                    current_skills = set(current_kg.get('skills', []))
+                    new_skills = [skill for skill in data if skill not in current_skills]
+                    if new_skills:
+                        kg_update_operations["knowledge_graph.skills"] = list(current_skills) + new_skills
+
+                elif category in ['education', 'work_experience', 'projects', 'certifications', 'research_work']:
+                    # Add to appropriate array
+                    if isinstance(data, dict) and data:
+                        current_items = current_kg.get(category, [])
+                        kg_update_operations[f"knowledge_graph.{category}"] = current_items + [data]
+
+                elif category == 'misc' and isinstance(data, dict) and data:
+                    # Merge into misc
+                    current_misc = current_kg.get('misc', {})
+                    current_misc.update(data)
+                    kg_update_operations["knowledge_graph.misc"] = current_misc
+
+                # Perform the update if there's something to update
+                if kg_update_operations:
+                    UserOperations.update_user(current_user['email'], kg_update_operations)
+                    knowledge_graph_updated = True
+                    logger.info(f"Knowledge graph updated: {category}")
+
+            except Exception as e:
+                logger.error(f"Error updating knowledge graph: {str(e)}")
+                # Don't fail the request if KG update fails
+
+        logger.info(f"Answer submitted successfully. Completion: {completion}%")
+
+        return {
+            "message": "Answer submitted successfully",
+            "user_id": current_user['user_id'],
+            "session_id": request.session_id,
+            "question_id": request.question_id,
+            "confidence": processing_result.get('confidence', 0.5),
+            "completion": completion,
+            "answered_count": answered_count,
+            "total_questions": len(questions),
+            "knowledge_graph_updated": knowledge_graph_updated,
+            "extracted_data": processing_result.get('summary', ''),
+            "all_questions_answered": completion >= 100
+        }
+
+    except HTTPException:
+        raise
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error submitting answer: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to submit answer: {str(e)}"
         )

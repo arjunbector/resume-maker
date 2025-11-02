@@ -800,6 +800,102 @@ The endpoint automatically updates the session with:
 
 ---
 
+#### Answer Question
+**POST** `/api/v1/ai/answer-question`
+
+Submit an answer to a questionnaire question. The AI processes the answer, extracts structured information, and automatically updates both the session questionnaire and the user's knowledge graph.
+
+**Authentication Required:**
+- Cookie: `access_token` OR
+- Header: `Authorization: Bearer {token}`
+
+**Request Body:**
+```json
+{
+  "session_id": "550e8400-e29b-41d4-a716-446655440000",
+  "question_id": "q-uuid-1",
+  "answer": "I have intermediate level experience with Docker, used it in 3 production projects"
+}
+```
+
+**Prerequisites:**
+- Session must exist and belong to authenticated user
+- Question must exist in the session's questionnaire
+- Questionnaire must have been generated using `/api/v1/ai/generate-questionnaire`
+
+**Response:**
+```json
+{
+  "message": "Answer submitted successfully",
+  "user_id": "user-uuid-here",
+  "session_id": "550e8400-e29b-41d4-a716-446655440000",
+  "question_id": "q-uuid-1",
+  "confidence": 0.8,
+  "completion": 33.33,
+  "answered_count": 1,
+  "total_questions": 3,
+  "knowledge_graph_updated": true,
+  "extracted_data": "Added Docker skill with intermediate proficiency",
+  "all_questions_answered": false
+}
+```
+
+**What This Endpoint Does:**
+1. Retrieves the session and validates ownership
+2. Finds the specific question by question_id
+3. Uses AI to process the answer and extract structured data
+4. Determines which knowledge graph category to update (education, skills, projects, etc.)
+5. Updates the question with the answer, confidence score, and status
+6. Calculates questionnaire completion percentage
+7. Updates the user's knowledge graph with extracted information
+8. Advances stage to `READY_FOR_RESUME` when all questions are answered
+
+**Knowledge Graph Auto-Update:**
+The AI automatically extracts relevant information from answers and adds it to the appropriate knowledge graph category:
+- **Skills**: Extracts skill names from answers about technical abilities
+- **Education**: Structures degree, institution, dates from education answers
+- **Work Experience**: Extracts company, position, dates, description from experience answers
+- **Projects**: Structures project name, description, technologies from project answers
+- **Certifications**: Extracts certification name, issuer, date from certification answers
+- **Research Work**: Structures title, venue, date from research answers
+
+**Answer Confidence Scoring:**
+The AI assigns a confidence score (0.0-1.0) based on answer quality:
+- **0.7-1.0**: Detailed, complete answer with specific information
+- **0.5-0.7**: Adequate answer with some details
+- **0.3-0.5**: Vague or incomplete answer
+- **0.0-0.3**: Unclear answer or "no/none" responses
+
+**Session Updates:**
+The endpoint automatically updates:
+- `questionnaire.questions[index]`: Updates the specific question with answer, confidence, and status
+- `questionnaire.completion`: Percentage of answered questions (0-100)
+- `resume_state.stage`: Set to `READY_FOR_RESUME` when completion reaches 100%
+- `resume_state.ai_context`: Summary with answer progress and extraction details
+- `resume_state.last_action`: Set to `question_answered`
+
+**Response Fields:**
+- `confidence`: AI confidence in the answer quality (0.0-1.0)
+- `completion`: Percentage of questions answered
+- `knowledge_graph_updated`: Whether the knowledge graph was updated with extracted data
+- `extracted_data`: Summary of what information was extracted from the answer
+- `all_questions_answered`: Boolean indicating if questionnaire is complete
+
+**Notes:**
+- Answers can be updated by submitting again with the same question_id
+- Knowledge graph updates are additive (new items are appended)
+- If AI fails to extract structured data, the answer is still saved
+- Empty or "no/none" answers are saved with low confidence
+
+**Status Codes:**
+- `200` - Answer submitted successfully
+- `401` - Not authenticated or invalid token
+- `403` - Session does not belong to authenticated user
+- `404` - Session or question not found
+- `500` - Server error
+
+---
+
 ### Sessions
 
 #### Create Session

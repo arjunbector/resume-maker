@@ -287,15 +287,15 @@ You are an expert at creating targeted questions to fill in missing information 
 For each missing field, generate a clear, specific question that will help the user provide the necessary information.
 
 **Guidelines:**
-1. Questions should be conversational and easy to understand
-2. Questions should be specific to the field type (skill, education, certification, experience, project)
-3. For skills: Ask about proficiency level and specific projects where used
-4. For education: Ask about institution, degree, field of study, dates
-5. For certifications: Ask about certification name, issuer, date obtained
-6. For experience: Ask about company, role, duration, key responsibilities
-7. For projects: Ask about project name, description, technologies used
+1. Questions MUST be short and concise - ideally a single sentence
+2. Questions should be direct and to the point
+3. For skills: Ask if they have experience and at what level
+4. For education: Ask about degree and institution
+5. For certifications: Ask if they have the certification
+6. For experience: Ask about relevant work experience
+7. For projects: Ask if they've worked on related projects
 8. Prioritize high-priority fields (priority 4-5) first
-9. Keep questions concise but comprehensive enough to gather needed details
+9. Use simple, conversational language
 
 **Return a valid JSON object with this exact structure:**
 {{
@@ -315,16 +315,16 @@ If missing field is "Docker" (skill, priority 5):
 {{
   "questions": [
     {{
-      "question": "Do you have experience with Docker? If yes, please describe your proficiency level and any projects where you've used Docker for containerization.",
+      "question": "What is your experience level with Docker?",
       "related_field": "Docker",
       "field_type": "skill",
       "priority": 5,
-      "suggested_format": "Describe proficiency (beginner/intermediate/advanced) and 1-2 specific examples"
+      "suggested_format": "Brief answer like 'beginner', 'intermediate', 'advanced' or specific project examples"
     }}
   ]
 }}
 
-IMPORTANT: Return ONLY the JSON object, no additional text or explanation.
+IMPORTANT: Return ONLY the JSON object, no additional text or explanation. Keep questions SHORT - one sentence maximum.
 """
 
             system_prompt = "You are a professional questionnaire designer for resume building. Always return valid JSON responses."
@@ -357,6 +357,137 @@ IMPORTANT: Return ONLY the JSON object, no additional text or explanation.
             }
         except Exception as e:
             logger.error(f"Error generating questionnaire: {str(e)}")
+            raise
+
+    def process_answer(self, question: str, answer: str, related_field: str, field_type: str) -> dict:
+        """
+        Process a user's answer to a questionnaire question and determine what to add to knowledge graph.
+
+        Args:
+            question: The original question text
+            answer: The user's answer
+            related_field: The field this question is related to
+            field_type: Type of field (skill, education, certification, experience, project)
+
+        Returns:
+            Dictionary with:
+            - knowledge_graph_updates: What to add to the user's knowledge graph
+            - confidence: Confidence score for the answer (0.0-1.0)
+            - category: Which knowledge graph category to update
+        """
+        try:
+            logger.info(f"Processing answer for field: {related_field}")
+
+            prompt = f"""
+You are an expert at processing resume information and structuring it for a knowledge graph.
+
+**Question Asked:** {question}
+**User's Answer:** {answer}
+**Related Field:** {related_field}
+**Field Type:** {field_type}
+
+**Task:**
+1. Analyze the user's answer
+2. Determine what should be added to their knowledge graph
+3. Structure the data according to the field type
+4. Assign a confidence score (0.0-1.0) based on answer quality and completeness
+
+**Knowledge Graph Categories and Schemas:**
+- **education**: {{"institution": str, "degree": str, "field": str, "start_date": str, "end_date": str}}
+- **work_experience**: {{"company": str, "position": str, "start_date": str, "end_date": str, "description": str}}
+- **projects**: {{"name": str, "description": str, "technologies": [str]}}
+- **certifications**: {{"name": str, "issuer": str, "date": str}}
+- **research_work**: {{"title": str, "venue": str, "date": str}}
+- **skills**: [str] (just add the skill name)
+- **misc**: {{}} (flexible dictionary)
+
+**Return a valid JSON object with this exact structure:**
+{{
+  "knowledge_graph_updates": {{
+    "category": "education|work_experience|projects|certifications|research_work|skills|misc",
+    "data": {{}} or [str]
+  }},
+  "confidence": 0.0-1.0,
+  "summary": "brief summary of what was extracted"
+}}
+
+**Guidelines:**
+- If answer is vague or incomplete, assign lower confidence (0.3-0.5)
+- If answer is detailed and complete, assign higher confidence (0.7-1.0)
+- For skills: extract skill name and proficiency if mentioned
+- Extract specific details like dates, companies, institutions when mentioned
+- If user says "no" or "none", return empty data with low confidence
+- Match the schema for the appropriate category
+
+**Example 1 - Skill:**
+Question: "What is your experience level with Docker?"
+Answer: "I've used Docker in 3 projects, intermediate level"
+Response:
+{{
+  "knowledge_graph_updates": {{
+    "category": "skills",
+    "data": ["Docker"]
+  }},
+  "confidence": 0.8,
+  "summary": "Added Docker skill with intermediate proficiency"
+}}
+
+**Example 2 - Education:**
+Question: "Do you have a Bachelor's degree in Computer Science?"
+Answer: "Yes, from Stanford University, graduated in 2022"
+Response:
+{{
+  "knowledge_graph_updates": {{
+    "category": "education",
+    "data": {{
+      "institution": "Stanford University",
+      "degree": "Bachelor's degree",
+      "field": "Computer Science",
+      "start_date": "",
+      "end_date": "2022"
+    }}
+  }},
+  "confidence": 0.9,
+  "summary": "Added Bachelor's degree in Computer Science from Stanford University"
+}}
+
+IMPORTANT: Return ONLY the JSON object, no additional text or explanation.
+"""
+
+            system_prompt = "You are a professional resume data processor. Always return valid JSON responses."
+
+            # Get response from LLM
+            response = self.run_prompt(prompt, system_prompt)
+
+            # Parse JSON response
+            import json
+            import re
+
+            # Try to extract JSON from response
+            json_match = re.search(r'\{[\s\S]*\}', response)
+            if json_match:
+                json_str = json_match.group(0)
+                result = json.loads(json_str)
+            else:
+                result = json.loads(response)
+
+            logger.info(f"Answer processed. Confidence: {result.get('confidence', 0.0)}")
+            return result
+
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse JSON response: {str(e)}")
+            logger.error(f"Response was: {response}")
+            return {
+                "knowledge_graph_updates": {
+                    "category": "misc",
+                    "data": {}
+                },
+                "confidence": 0.0,
+                "summary": "Failed to parse answer",
+                "error": "Failed to parse AI response"
+            }
+        except Exception as e:
+            logger.error(f"Error processing answer: {str(e)}")
             raise
 
     def run_prompt(self, prompt: str, system_prompt: Optional[str] = None) -> str:
