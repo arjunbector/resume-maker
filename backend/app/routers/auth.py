@@ -1,9 +1,9 @@
-from fastapi import APIRouter, HTTPException, Response, Cookie
+from fastapi import APIRouter, HTTPException, Response, Depends
 from loguru import logger
 from database.models import SignupRequest, LoginRequest, UserResponse
 from database.operations import UserOperations
-from utils.auth import create_access_token, decode_access_token
-from typing import Optional
+from utils.auth import create_access_token
+from utils.dependencies import get_current_user as get_current_user_dependency
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 
@@ -38,7 +38,8 @@ def signup(request: SignupRequest, response: Response):
         return {
             "message": "User created successfully",
             "user_id": result["user_id"],
-            "email": request.email
+            "email": request.email,
+            "access_token": access_token
         }
 
     except ValueError as e:
@@ -82,7 +83,8 @@ def login(request: LoginRequest, response: Response):
         return {
             "message": "Login successful",
             "user_id": user["user_id"],
-            "email": user["email"]
+            "email": user["email"],
+            "access_token": access_token
         }
 
     except HTTPException:
@@ -93,40 +95,12 @@ def login(request: LoginRequest, response: Response):
 
 
 @router.get("/me")
-def get_current_user(access_token: Optional[str] = Cookie(None)):
+def get_current_user(current_user: dict = Depends(get_current_user_dependency)):
     """
-    Get current authenticated user details from JWT token
+    Get current authenticated user details from JWT token.
+    Supports both cookie and Authorization header (Bearer token).
     """
-    try:
-        if not access_token:
-            raise HTTPException(status_code=401, detail="Not authenticated")
-
-        # Decode token
-        payload = decode_access_token(access_token)
-        if not payload:
-            raise HTTPException(status_code=401, detail="Invalid or expired token")
-
-        user_id = payload.get("sub")
-        if not user_id:
-            raise HTTPException(status_code=401, detail="Invalid token payload")
-
-        # Get user from database
-        user = UserOperations.get_user_by_id(user_id)
-
-        # Remove hashed_password from response
-        user.pop("hashed_password", None)
-
-        logger.info(f"Current user fetched: {user['email']}")
-
-        return user
-
-    except HTTPException:
-        raise
-    except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
-    except Exception as e:
-        logger.error(f"Error getting current user: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to get current user: {str(e)}")
+    return current_user
 
 
 @router.post("/logout")

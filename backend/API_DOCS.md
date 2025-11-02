@@ -3,6 +3,14 @@
 ## Base URL
 `http://localhost:8000`
 
+## Authentication
+
+All protected endpoints support two authentication methods:
+1. **Cookie-based:** `access_token` cookie (set automatically on login/signup)
+2. **Header-based:** `Authorization: Bearer {token}` header
+
+The server checks for the token in cookies first, then falls back to the Authorization header.
+
 ## Endpoints
 
 ### Authentication
@@ -25,12 +33,15 @@ Create a new user account with email and password. Sets JWT access token in cook
 {
   "message": "User created successfully",
   "user_id": "string",
-  "email": "string"
+  "email": "string",
+  "access_token": "string"
 }
 ```
 
 **Cookie Set:**
 - `access_token` - JWT token (httpOnly, 30 days expiry)
+
+*Note: The `access_token` is returned in both the response body (for header-based auth) and as a cookie (for cookie-based auth).*
 
 **Status Codes:**
 - `200` - User created successfully
@@ -55,12 +66,15 @@ Login with email and password. Sets JWT access token in cookie.
 {
   "message": "Login successful",
   "user_id": "string",
-  "email": "string"
+  "email": "string",
+  "access_token": "string"
 }
 ```
 
 **Cookie Set:**
 - `access_token` - JWT token (httpOnly, 30 days expiry)
+
+*Note: The `access_token` is returned in both the response body (for header-based auth) and as a cookie (for cookie-based auth).*
 
 **Status Codes:**
 - `200` - Login successful
@@ -70,10 +84,14 @@ Login with email and password. Sets JWT access token in cookie.
 #### Get Current User
 **GET** `/api/v1/auth/me`
 
-Get current authenticated user details from JWT token in cookie.
+Get current authenticated user details from JWT token.
+Supports both cookie-based and header-based authentication.
 
-**Cookies:**
-- `access_token` (required) - JWT token from login/signup
+**Authentication (choose one):**
+1. **Cookie:** `access_token` - JWT token from login/signup
+2. **Header:** `Authorization: Bearer {token}` - JWT token
+
+*Note: Cookie authentication is tried first, then Authorization header.*
 
 **Response:**
 ```json

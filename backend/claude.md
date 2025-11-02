@@ -76,6 +76,7 @@ The application follows a modular FastAPI architecture with clear separation of 
 
 **Utilities** ([app/utils/](app/utils/))
 - `auth.py` - Password hashing (bcrypt) and JWT token management
+- `dependencies.py` - Reusable FastAPI dependencies for authentication (supports cookie and Authorization header)
 - `prompt.py` - Prompt generation for AI models
 - `questions.py` - Question parsing from AI responses
 
@@ -109,12 +110,27 @@ The JobQuestionsPipeline uses smolagents framework with:
 ## API Patterns
 
 ### Authentication
-The application uses JWT-based authentication with httpOnly cookies:
+The application uses JWT-based authentication with flexible token delivery:
 - Users sign up with email/password (POST `/api/v1/auth/signup`)
-- Login sets a JWT token in httpOnly cookie (30 day expiry)
+- Login returns access_token in response body AND sets httpOnly cookie (30 day expiry)
 - Token contains user_id (sub) and email
+- Authentication supports both:
+  1. Cookie-based: `access_token` cookie (checked first)
+  2. Header-based: `Authorization: Bearer {token}` header (fallback)
 - `/api/v1/auth/me` retrieves current user from token
 - Logout removes the cookie
+
+**For Protected Routes:**
+Use the `get_current_user` dependency from `utils.dependencies`:
+```python
+from fastapi import Depends
+from utils.dependencies import get_current_user
+
+@router.get("/protected")
+def protected_route(current_user: dict = Depends(get_current_user)):
+    # current_user contains user data without hashed_password
+    return {"message": f"Hello {current_user['email']}"}
+```
 
 ### Error Handling
 All endpoints follow consistent error handling:
@@ -150,9 +166,11 @@ All endpoints follow consistent error handling:
 
 ## Security Considerations
 
-- Passwords are hashed using bcrypt (passlib with bcrypt scheme)
+- Passwords are hashed using bcrypt (native bcrypt library, not passlib)
 - JWT tokens stored in httpOnly cookies to prevent XSS
+- Token also returned in response body for clients that need header-based auth
 - Token expiry set to 30 days
+- Authentication dependency checks cookie first, then Authorization header
 - SECRET_KEY should be a strong random value in production
 - Consider adding rate limiting for auth endpoints in production
 - Cookie `secure` flag should be True when using HTTPS
