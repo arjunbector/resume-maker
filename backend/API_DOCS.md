@@ -5,6 +5,114 @@
 
 ## Endpoints
 
+### Authentication
+
+#### Sign Up
+**POST** `/api/v1/auth/signup`
+
+Create a new user account with email and password. Sets JWT access token in cookie.
+
+**Request Body:**
+```json
+{
+  "email": "string",
+  "password": "string"
+}
+```
+
+**Response:**
+```json
+{
+  "message": "User created successfully",
+  "user_id": "string",
+  "email": "string"
+}
+```
+
+**Cookie Set:**
+- `access_token` - JWT token (httpOnly, 30 days expiry)
+
+**Status Codes:**
+- `200` - User created successfully
+- `400` - User already exists
+- `500` - Server error
+
+#### Login
+**POST** `/api/v1/auth/login`
+
+Login with email and password. Sets JWT access token in cookie.
+
+**Request Body:**
+```json
+{
+  "email": "string",
+  "password": "string"
+}
+```
+
+**Response:**
+```json
+{
+  "message": "Login successful",
+  "user_id": "string",
+  "email": "string"
+}
+```
+
+**Cookie Set:**
+- `access_token` - JWT token (httpOnly, 30 days expiry)
+
+**Status Codes:**
+- `200` - Login successful
+- `401` - Invalid email or password
+- `500` - Server error
+
+#### Get Current User
+**GET** `/api/v1/auth/me`
+
+Get current authenticated user details from JWT token in cookie.
+
+**Cookies:**
+- `access_token` (required) - JWT token from login/signup
+
+**Response:**
+```json
+{
+  "user_id": "string",
+  "name": "string",
+  "email": "string",
+  "phone": "string",
+  "socials": {
+    "linkedin": "string"
+  },
+  "address": "string"
+}
+```
+
+**Status Codes:**
+- `200` - User details retrieved
+- `401` - Not authenticated or invalid token
+- `404` - User not found
+- `500` - Server error
+
+#### Logout
+**POST** `/api/v1/auth/logout`
+
+Logout user by removing the access token cookie.
+
+**Response:**
+```json
+{
+  "message": "Logout successful"
+}
+```
+
+**Status Codes:**
+- `200` - Logout successful
+- `500` - Server error
+
+---
+
 ### Users
 
 #### Get User
@@ -32,39 +140,6 @@ Get user by email.
 **Status Codes:**
 - `200` - User found
 - `404` - User not found
-- `500` - Server error
-
-#### Create User
-**POST** `/api/v1/users`
-
-Create a new user with personal details.
-
-**Request Body:**
-```json
-{
-  "name": "string",
-  "email": "string",
-  "phone": "string",
-  "socials": {
-    "linkedin": "string"
-  },
-  "address": "string"
-}
-```
-
-*Note: `user_id` is automatically generated if not provided.*
-
-**Response:**
-```json
-{
-  "message": "User created successfully",
-  "user_id": "string"
-}
-```
-
-**Status Codes:**
-- `200` - User created successfully
-- `400` - User with email already exists
 - `500` - Server error
 
 #### Update User

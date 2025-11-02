@@ -22,8 +22,25 @@ class Questionnaire(BaseModel):
     questions: List[str]
     answers: Dict[str, str]
 
+class SignupRequest(BaseModel):
+    email: str
+    password: str
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
 class User(BaseModel):
     user_id: Optional[str] = None
+    name: Optional[str] = ""
+    email: str
+    hashed_password: str
+    phone: Optional[str] = ""
+    socials: Optional[Dict[str, str]] = {}
+    address: Optional[str] = ""
+
+class UserResponse(BaseModel):
+    user_id: str
     name: str
     email: str
     phone: str

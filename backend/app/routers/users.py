@@ -18,18 +18,6 @@ def get_user(email: str):
         logger.error(f"Error fetching user: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch user: {str(e)}")
 
-@router.post("")
-def create_user(user: User):
-    try:
-        logger.info(f"Creating new user: {user.email}")
-        result = UserOperations.create_user(user)
-        return result
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        logger.error(f"Error creating user: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to create user: {str(e)}")
-
 @router.put("")
 def update_user(email: str, updates: Dict[str, Any]):
     try:
