@@ -242,6 +242,51 @@ Update user fields by email.
 
 ---
 
+### AI
+
+#### Run Custom Prompt
+**POST** `/api/v1/ai/custom`
+
+Execute a custom prompt through the AI agent. Useful for testing, experimentation, or custom AI interactions.
+
+**Request Body:**
+```json
+{
+  "prompt": "string",
+  "system_prompt": "string (optional)",
+  "model": "string (optional)"
+}
+```
+
+**Model Options:**
+- `gemini/gemini-2.5-flash` (default)
+- `ollama_chat/gpt-oss` (requires Ollama running locally)
+
+**Example Request:**
+```json
+{
+  "prompt": "What are the top 5 skills for a software engineer?",
+  "system_prompt": "You are a helpful resume writing assistant.",
+  "model": "gemini/gemini-2.5-flash"
+}
+```
+
+**Response:**
+```json
+{
+  "response": "string",
+  "model": "gemini/gemini-2.5-flash",
+  "prompt_length": 50,
+  "response_length": 200
+}
+```
+
+**Status Codes:**
+- `200` - Prompt executed successfully
+- `500` - Server error
+
+---
+
 ### Sessions
 
 #### Create Session

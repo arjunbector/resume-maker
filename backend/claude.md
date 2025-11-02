@@ -69,6 +69,11 @@ The application follows a modular FastAPI architecture with clear separation of 
 - `auth.py` - Authentication endpoints (signup, login, logout, me at `/api/v1/auth`)
 - `users.py` - User management endpoints (GET/PUT at `/api/v1/users`)
 - `sessions.py` - Session management (POST/PUT at `/api/v1/sessions`)
+- `ai.py` - AI endpoints for custom prompts and AI interactions (POST at `/api/v1/ai/custom`)
+
+**AI Module** ([app/ai/](app/ai/))
+- `agent.py` - ResumeAgent class for AI-powered resume generation and analysis (supports Gemini and Ollama via LiteLLM)
+- `test_agent.py` - Test script for verifying agent functionality
 
 **Services** ([app/services/](app/services/))
 - `pipeline.py` - JobQuestionsPipeline for AI agent initialization with LiteLLM integration (supports Ollama and Gemini models)
@@ -149,10 +154,23 @@ Individual questionnaire question:
 
 ### AI Pipeline
 
-The JobQuestionsPipeline uses smolagents framework with:
+**ResumeAgent** ([app/ai/agent.py](app/ai/agent.py))
+The main AI agent for resume generation and analysis:
+- Supports multiple LLM providers (Gemini, Ollama)
+- `run_prompt(prompt, system_prompt)` - Execute arbitrary prompts with optional system context
+- Automatic model initialization based on provider string
+- Built on LiteLLMModel for flexible provider support
+
+**JobQuestionsPipeline** (Legacy - [app/services/pipeline.py](app/services/pipeline.py))
+Uses smolagents framework with:
 - LiteLLMModel for flexible LLM provider support (Gemini/Ollama)
 - ToolCallingAgent with web scraping capabilities
 - get_website_content tool for fetching job posting details
+
+**Testing the Agent:**
+```bash
+uv run app/ai/test_agent.py
+```
 
 ## API Patterns
 
@@ -202,7 +220,46 @@ All endpoints follow consistent error handling:
 
 ## Important Implementation Notes
 
-- MongoDB connection is established on app startup and closed on shutdown via lifespan context manager
+### Application Startup
+The application uses FastAPI's lifespan context manager for resource initialization and cleanup:
+
+**On Startup:**
+- MongoDB connection is established via `mongodb.connect()`
+- AI agent (ResumeAgent) is initialized and stored in `app.state.agent` with the configured model (default: `gemini/gemini-2.5-flash`)
+- Agent is accessible from any router via `request.app.state.agent`
+
+**On Shutdown:**
+- MongoDB connection is closed via `mongodb.close()`
+
+**Example lifespan implementation:**
+```python
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    logger.info("Starting up application...")
+    mongodb.connect()
+    app.state.agent = ResumeAgent(model="gemini/gemini-2.5-flash")
+    logger.info("AI agent initialized")
+
+    yield
+
+    # Shutdown
+    logger.info("Shutting down application...")
+    mongodb.close()
+
+app = FastAPI(lifespan=lifespan)
+```
+
+**Using the AI agent in routers:**
+```python
+@router.post("/custom")
+def run_custom_prompt(request: CustomPromptRequest, app_request: Request):
+    agent = app_request.app.state.agent
+    response = agent.run_prompt(prompt=request.prompt)
+    return {"response": response}
+```
+
+### Other Notes
 - CORS is configured to allow all origins for development
 - JWT tokens use HS256 algorithm with SECRET_KEY from environment
 - Cookies are httpOnly for security (prevents XSS attacks)

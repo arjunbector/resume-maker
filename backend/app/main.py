@@ -5,15 +5,26 @@ from loguru import logger
 from database.models import JobQuestionsRequest
 from database.client import mongodb
 from services.pipeline import JobQuestionsPipeline
+from ai.agent import ResumeAgent
 from utils.prompt import generate_prompt
 from utils.questions import parse_questions
-from routers import users, sessions, auth
+from routers import users, sessions, auth, ai
 import uvicorn
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Startup: Initialize connections and agents
+    logger.info("Starting up application...")
     mongodb.connect()
+
+    # Initialize AI agent
+    app.state.agent = ResumeAgent(model="gemini/gemini-2.5-flash")
+    logger.info("AI agent initialized")
+
     yield
+
+    # Shutdown: Clean up resources
+    logger.info("Shutting down application...")
     mongodb.close()
 
 app = FastAPI(lifespan=lifespan)
@@ -24,6 +35,7 @@ pipeline = JobQuestionsPipeline(model="gemini/gemini-2.5-flash")
 app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(sessions.router)
+app.include_router(ai.router)
 
 # Add CORS middleware to allow all origins
 app.add_middleware(
