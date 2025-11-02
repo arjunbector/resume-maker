@@ -262,6 +262,103 @@ IMPORTANT: Return ONLY the JSON object, no additional text or explanation.
             logger.error(f"Error comparing requirements with knowledge graph: {str(e)}")
             raise
 
+    def generate_questionnaire(self, missing_fields: list) -> dict:
+        """
+        Generate contextual questions for missing fields in user's profile.
+
+        Args:
+            missing_fields: List of FieldMetadata objects representing missing requirements
+
+        Returns:
+            Dictionary with:
+            - questions: List of question objects with question text and related_field
+        """
+        try:
+            logger.info(f"Generating questionnaire for {len(missing_fields)} missing fields...")
+
+            # Build prompt for questionnaire generation
+            prompt = f"""
+You are an expert at creating targeted questions to fill in missing information for a resume.
+
+**Missing Fields from User's Profile:**
+{missing_fields}
+
+**Task:**
+For each missing field, generate a clear, specific question that will help the user provide the necessary information.
+
+**Guidelines:**
+1. Questions should be conversational and easy to understand
+2. Questions should be specific to the field type (skill, education, certification, experience, project)
+3. For skills: Ask about proficiency level and specific projects where used
+4. For education: Ask about institution, degree, field of study, dates
+5. For certifications: Ask about certification name, issuer, date obtained
+6. For experience: Ask about company, role, duration, key responsibilities
+7. For projects: Ask about project name, description, technologies used
+8. Prioritize high-priority fields (priority 4-5) first
+9. Keep questions concise but comprehensive enough to gather needed details
+
+**Return a valid JSON object with this exact structure:**
+{{
+  "questions": [
+    {{
+      "question": "Clear, specific question text",
+      "related_field": "exact name of the missing field",
+      "field_type": "skill|education|certification|experience|project",
+      "priority": 1-5,
+      "suggested_format": "Brief hint on what format/detail level expected"
+    }}
+  ]
+}}
+
+**Example:**
+If missing field is "Docker" (skill, priority 5):
+{{
+  "questions": [
+    {{
+      "question": "Do you have experience with Docker? If yes, please describe your proficiency level and any projects where you've used Docker for containerization.",
+      "related_field": "Docker",
+      "field_type": "skill",
+      "priority": 5,
+      "suggested_format": "Describe proficiency (beginner/intermediate/advanced) and 1-2 specific examples"
+    }}
+  ]
+}}
+
+IMPORTANT: Return ONLY the JSON object, no additional text or explanation.
+"""
+
+            system_prompt = "You are a professional questionnaire designer for resume building. Always return valid JSON responses."
+
+            # Get response from LLM
+            response = self.run_prompt(prompt, system_prompt)
+
+            # Parse JSON response
+            import json
+            import re
+
+            # Try to extract JSON from response (in case LLM adds extra text)
+            json_match = re.search(r'\{[\s\S]*\}', response)
+            if json_match:
+                json_str = json_match.group(0)
+                result = json.loads(json_str)
+            else:
+                result = json.loads(response)
+
+            logger.info(f"Questionnaire generation complete. Generated {len(result.get('questions', []))} questions")
+            return result
+
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse JSON response: {str(e)}")
+            logger.error(f"Response was: {response}")
+            # Return fallback structure
+            return {
+                "questions": [],
+                "error": "Failed to parse AI response"
+            }
+        except Exception as e:
+            logger.error(f"Error generating questionnaire: {str(e)}")
+            raise
+
     def run_prompt(self, prompt: str, system_prompt: Optional[str] = None) -> str:
         """
         Run an arbitrary prompt through the LLM and return the response.

@@ -250,3 +250,101 @@ def compare_with_user_profile(
             status_code=500,
             detail=f"Failed to compare with user profile: {str(e)}"
         )
+
+
+@router.post("/generate-questionnaire")
+def generate_questionnaire(
+    session_id: str,
+    app_request: Request,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Generate a questionnaire based on missing fields identified in the session.
+
+    This endpoint takes a session with identified missing fields and generates
+    contextual questions to help the user fill in those gaps.
+
+    Updates the session's questionnaire field with generated questions and
+    advances the stage to QUESTIONNAIRE_PENDING.
+    """
+    try:
+        logger.info(f"Generating questionnaire for session {session_id}")
+
+        # Get the session
+        session = SessionOperations.get_session(session_id)
+
+        # Verify session belongs to current user
+        if session['user_id'] != current_user['user_id']:
+            raise HTTPException(status_code=403, detail="Not authorized to access this session")
+
+        # Get missing fields from session
+        missing_fields = session.get('resume_state', {}).get('missing_fields', [])
+
+        if not missing_fields:
+            raise HTTPException(
+                status_code=400,
+                detail="Session has no missing fields. Please run comparison first using /api/v1/ai/compare"
+            )
+
+        # Get the agent from app state
+        agent: ResumeAgent = app_request.app.state.agent
+
+        # Generate questionnaire
+        questionnaire_data = agent.generate_questionnaire(missing_fields)
+
+        logger.info("Questionnaire generated successfully")
+
+        # Convert to QuestionItem format with unique IDs
+        from uuid import uuid4
+        from database.models import QuestionItem
+
+        questions = []
+        for q_data in questionnaire_data.get('questions', []):
+            question_item = QuestionItem(
+                id=str(uuid4()),
+                question=q_data.get('question', ''),
+                related_field=q_data.get('related_field', ''),
+                answer=None,
+                confidence=None,
+                status="unanswered"
+            )
+            questions.append(question_item)
+
+        # Calculate completion (all unanswered at this point)
+        completion = 0.0
+
+        # Update session with questionnaire
+        session_updates = {
+            "questionnaire.questions": [q.model_dump() for q in questions],
+            "questionnaire.completion": completion,
+            "resume_state.stage": ResumeStage.QUESTIONNAIRE_PENDING.value,
+            "resume_state.ai_context": {
+                "summary": f"Generated questionnaire with {len(questions)} questions",
+                "total_questions": len(questions),
+                "questions_answered": 0
+            },
+            "resume_state.last_action": "questionnaire_generated"
+        }
+
+        SessionOperations.update_session(session_id, session_updates)
+        logger.info(f"Session {session_id} updated with questionnaire")
+
+        return {
+            "message": "Questionnaire generated successfully",
+            "user_id": current_user['user_id'],
+            "session_id": session_id,
+            "total_questions": len(questions),
+            "questions": [q.model_dump() for q in questions],
+            "completion": completion
+        }
+
+    except HTTPException:
+        raise
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error generating questionnaire: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to generate questionnaire: {str(e)}"
+        )
