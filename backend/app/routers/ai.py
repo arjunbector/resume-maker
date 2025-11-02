@@ -219,10 +219,44 @@ def compare_with_user_profile(
             FieldMetadata(**field) for field in comparison.get('matched_fields', [])
         ]
 
+        # Determine stage and message based on missing fields
+        if len(missing_fields) == 0:
+            # No missing fields - ready for resume generation
+            stage = ResumeStage.READY_FOR_RESUME.value
+            message = "No missing fields found"
+            logger.info(f"No missing fields found for session {session_id}, setting stage to READY_FOR_RESUME")
+
+            # Clean up any unanswered questions from questionnaire
+            questionnaire = session.get('questionnaire', {})
+            questions = questionnaire.get('questions', [])
+            if questions:
+                # Keep only answered questions
+                answered_questions = [q for q in questions if q.get('status') == 'answered']
+                unanswered_count = len(questions) - len(answered_questions)
+
+                if unanswered_count > 0:
+                    logger.info(f"Removing {unanswered_count} unanswered questions as resume is ready")
+
+                # Recalculate completion
+                completion = 100.0 if len(answered_questions) > 0 else 0.0
+
+                # Update questionnaire in session
+                questionnaire_updates = {
+                    "questionnaire.questions": answered_questions,
+                    "questionnaire.completion": completion
+                }
+            else:
+                questionnaire_updates = {}
+        else:
+            # Has missing fields - need questionnaire
+            stage = ResumeStage.REQUIREMENTS_IDENTIFIED.value
+            message = "Requirements comparison completed"
+            questionnaire_updates = {}
+
         # Update session with comparison results
         session_updates = {
             "resume_state.missing_fields": [field.model_dump() for field in missing_fields],
-            "resume_state.stage": ResumeStage.REQUIREMENTS_IDENTIFIED.value,
+            "resume_state.stage": stage,
             "resume_state.ai_context": {
                 "summary": f"Compared job requirements with user profile",
                 "total_missing": len(missing_fields),
@@ -232,11 +266,14 @@ def compare_with_user_profile(
             "resume_state.last_action": "requirements_compared"
         }
 
+        # Merge questionnaire updates if any
+        session_updates.update(questionnaire_updates)
+
         SessionOperations.update_session(session_id, session_updates)
         logger.info(f"Session {session_id} updated with comparison results")
 
         return {
-            "message": "Requirements comparison completed",
+            "message": message,
             "user_id": current_user['user_id'],
             "session_id": session_id,
             "missing_fields": comparison.get('missing_fields', []),
