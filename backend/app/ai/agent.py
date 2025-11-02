@@ -145,6 +145,123 @@ IMPORTANT: Return ONLY the JSON object, no additional text or explanation.
             logger.error(f"Error analyzing job requirements: {str(e)}")
             raise
 
+    def compare_and_find_missing_fields(
+        self,
+        parsed_requirements: list,
+        user_knowledge_graph: dict
+    ) -> dict:
+        """
+        Compare job requirements against user's knowledge graph and identify missing fields.
+
+        Args:
+            parsed_requirements: List of requirements from job analysis
+            user_knowledge_graph: User's knowledge graph with education, experience, skills, etc.
+
+        Returns:
+            Dictionary with:
+            - missing_fields: List of FieldMetadata objects for missing requirements
+            - matched_fields: List of FieldMetadata objects for matched requirements
+            - fill_suggestions: Suggestions for how to fill missing fields
+        """
+        try:
+            logger.info("Comparing job requirements with user knowledge graph...")
+
+            # Build prompt for comparison
+            prompt = f"""
+You are an expert at comparing job requirements against a candidate's profile.
+
+**Job Requirements:**
+{parsed_requirements}
+
+**User's Knowledge Graph:**
+{user_knowledge_graph}
+
+**Task:**
+1. Compare each job requirement against the user's knowledge graph
+2. Identify which requirements are MISSING from the user's profile
+3. Identify which requirements are MATCHED (user has this skill/experience)
+4. For missing fields, suggest how the user could fill them (e.g., "Add project experience with Docker", "Add Python certification")
+5. Assign confidence (0.0-1.0) for each match/mismatch
+
+**Return a valid JSON object with this exact structure:**
+{{
+  "missing_fields": [
+    {{
+      "name": "requirement name",
+      "type": "skill|education|certification|experience|project",
+      "description": "why this is missing",
+      "priority": 1-5,
+      "confidence": 0.0-1.0,
+      "source": "ai_inferred"
+    }}
+  ],
+  "matched_fields": [
+    {{
+      "name": "requirement name",
+      "type": "skill|education|certification|experience|project",
+      "description": "how user satisfies this",
+      "priority": 1-5,
+      "confidence": 0.0-1.0,
+      "source": "user_knowledge_graph",
+      "value": "matching value from user's profile"
+    }}
+  ],
+  "fill_suggestions": [
+    {{
+      "field_name": "missing requirement name",
+      "suggestion": "specific suggestion on how to fill this field",
+      "category": "education|experience|skill|project|certification"
+    }}
+  ]
+}}
+
+**Guidelines:**
+- Consider partial matches (e.g., user has "JavaScript" when job requires "React")
+- Be strict: only mark as matched if user clearly has the requirement
+- Confidence should reflect how well the user meets the requirement
+- Missing fields should have lower confidence if it's unclear whether user truly lacks it
+- Fill suggestions should be actionable and specific
+
+IMPORTANT: Return ONLY the JSON object, no additional text or explanation.
+"""
+
+            system_prompt = "You are a professional resume analyst. Always return valid JSON responses."
+
+            # Get response from LLM
+            response = self.run_prompt(prompt, system_prompt)
+
+            # Parse JSON response
+            import json
+            import re
+
+            # Try to extract JSON from response (in case LLM adds extra text)
+            json_match = re.search(r'\{[\s\S]*\}', response)
+            if json_match:
+                json_str = json_match.group(0)
+                result = json.loads(json_str)
+            else:
+                result = json.loads(response)
+
+            logger.info(
+                f"Comparison complete. Found {len(result.get('missing_fields', []))} missing fields, "
+                f"{len(result.get('matched_fields', []))} matched fields"
+            )
+            return result
+
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse JSON response: {str(e)}")
+            logger.error(f"Response was: {response}")
+            # Return fallback structure
+            return {
+                "missing_fields": [],
+                "matched_fields": [],
+                "fill_suggestions": [],
+                "error": "Failed to parse AI response"
+            }
+        except Exception as e:
+            logger.error(f"Error comparing requirements with knowledge graph: {str(e)}")
+            raise
+
     def run_prompt(self, prompt: str, system_prompt: Optional[str] = None) -> str:
         """
         Run an arbitrary prompt through the LLM and return the response.

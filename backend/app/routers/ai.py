@@ -110,8 +110,11 @@ def analyze_job_requirements(
                     FieldMetadata(**req) for req in analysis.get('parsed_requirements', [])
                 ]
 
-                # Update session with analysis results
+                # Update session with analysis results and all job details
                 session_updates = {
+                    "job_details.job_description": request.job_description,
+                    "job_details.job_role": request.job_role or "",
+                    "job_details.company_name": request.company_name or "",
                     "job_details.parsed_requirements": [req.model_dump() for req in parsed_requirements],
                     "job_details.extracted_keywords": analysis.get('extracted_keywords', []),
                     "resume_state.stage": ResumeStage.JOB_ANALYZED.value,
@@ -151,4 +154,99 @@ def analyze_job_requirements(
         raise HTTPException(
             status_code=500,
             detail=f"Failed to analyze job requirements: {str(e)}"
+        )
+
+
+@router.post("/compare")
+def compare_with_user_profile(
+    session_id: str,
+    app_request: Request,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Compare job requirements with user's knowledge graph and identify missing fields.
+
+    This endpoint takes a session with analyzed job requirements and compares them
+    against the user's profile to identify what's missing.
+
+    Updates the session's resume_state with missing_fields and matched_fields.
+    """
+    try:
+        logger.info(f"Comparing session {session_id} with user profile for {current_user['email']}")
+
+        # Get the session
+        session = SessionOperations.get_session(session_id)
+
+        # Verify session belongs to current user
+        if session['user_id'] != current_user['user_id']:
+            raise HTTPException(status_code=403, detail="Not authorized to access this session")
+
+        # Get parsed requirements from session
+        parsed_requirements = session.get('job_details', {}).get('parsed_requirements', [])
+
+        if not parsed_requirements:
+            raise HTTPException(
+                status_code=400,
+                detail="Session has no parsed requirements. Please analyze the job first using /api/v1/ai/analyze"
+            )
+
+        # Get user's knowledge graph
+        user = UserOperations.get_user_by_id(current_user['user_id'])
+        user_knowledge_graph = user.get('knowledge_graph', {})
+
+        # Get the agent from app state
+        agent: ResumeAgent = app_request.app.state.agent
+
+        # Compare requirements with user's knowledge graph
+        comparison = agent.compare_and_find_missing_fields(
+            parsed_requirements=parsed_requirements,
+            user_knowledge_graph=user_knowledge_graph
+        )
+
+        logger.info("Comparison completed successfully")
+
+        # Convert missing_fields and matched_fields to FieldMetadata format
+        missing_fields = [
+            FieldMetadata(**field) for field in comparison.get('missing_fields', [])
+        ]
+        matched_fields = [
+            FieldMetadata(**field) for field in comparison.get('matched_fields', [])
+        ]
+
+        # Update session with comparison results
+        session_updates = {
+            "resume_state.missing_fields": [field.model_dump() for field in missing_fields],
+            "resume_state.stage": ResumeStage.REQUIREMENTS_IDENTIFIED.value,
+            "resume_state.ai_context": {
+                "summary": f"Compared job requirements with user profile",
+                "total_missing": len(missing_fields),
+                "total_matched": len(matched_fields),
+                "fill_suggestions": comparison.get('fill_suggestions', [])
+            },
+            "resume_state.last_action": "requirements_compared"
+        }
+
+        SessionOperations.update_session(session_id, session_updates)
+        logger.info(f"Session {session_id} updated with comparison results")
+
+        return {
+            "message": "Requirements comparison completed",
+            "user_id": current_user['user_id'],
+            "session_id": session_id,
+            "missing_fields": comparison.get('missing_fields', []),
+            "matched_fields": comparison.get('matched_fields', []),
+            "fill_suggestions": comparison.get('fill_suggestions', []),
+            "total_missing": len(missing_fields),
+            "total_matched": len(matched_fields)
+        }
+
+    except HTTPException:
+        raise
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error comparing with user profile: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to compare with user profile: {str(e)}"
         )

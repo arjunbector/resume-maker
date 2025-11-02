@@ -1,6 +1,6 @@
 from loguru import logger
 from database.client import mongodb
-from database.models import User, Session, ResumeState, Questionnaire, KnowledgeGraph, ResumeStage
+from database.models import User, Session, ResumeState, Questionnaire, KnowledgeGraph, ResumeStage, JobDetails
 from uuid import uuid4
 from typing import Dict, Any, Optional
 from datetime import datetime
@@ -122,8 +122,8 @@ class UserOperations:
 
 class SessionOperations:
     @staticmethod
-    def create_session(user_id: str, job_details) -> Dict[str, str]:
-        """Create a new session for a user"""
+    def create_session(user_id: str) -> Dict[str, str]:
+        """Create a new blank session for a user"""
         # Check if user exists
         user = mongodb.db.users.find_one({"user_id": user_id})
         if not user:
@@ -133,12 +133,22 @@ class SessionOperations:
         # Generate session_id
         session_id = str(uuid4())
 
-        # Create session with default values using new models
+        # Create blank job details
+        blank_job_details = JobDetails(
+            job_role="",
+            company_name="",
+            company_url="",
+            job_description="",
+            parsed_requirements=[],
+            extracted_keywords=[]
+        )
+
+        # Create session with default values
         now = datetime.utcnow()
         session = Session(
             session_id=session_id,
             user_id=user_id,
-            job_details=job_details,
+            job_details=blank_job_details,
             resume_state=ResumeState(
                 stage=ResumeStage.INIT,
                 required_fields=[],
@@ -158,7 +168,7 @@ class SessionOperations:
         session_dict = session.model_dump()
         mongodb.db.sessions.insert_one(session_dict)
 
-        logger.info(f"Session created successfully with id: {session_id}")
+        logger.info(f"Blank session created successfully with id: {session_id}")
 
         return {
             "message": "Session created successfully",
@@ -194,4 +204,42 @@ class SessionOperations:
             "message": "Session updated successfully",
             "session_id": session_id,
             "modified_count": result.modified_count
+        }
+
+    @staticmethod
+    def get_session(session_id: str) -> Dict[str, Any]:
+        """Get session by session_id"""
+        session = mongodb.db.sessions.find_one({"session_id": session_id})
+        if not session:
+            logger.warning(f"Session with id {session_id} not found")
+            raise ValueError("Session not found")
+
+        # Remove MongoDB _id from response
+        session.pop("_id", None)
+
+        logger.info(f"Session retrieved successfully: {session_id}")
+        return session
+
+    @staticmethod
+    def get_user_sessions(user_id: str) -> Dict[str, Any]:
+        """Get all sessions for a user"""
+        # Check if user exists
+        user = mongodb.db.users.find_one({"user_id": user_id})
+        if not user:
+            logger.warning(f"User with id {user_id} not found")
+            raise ValueError("User not found")
+
+        # Get all sessions for the user, sorted by last_active descending
+        sessions = list(mongodb.db.sessions.find({"user_id": user_id}).sort("last_active", -1))
+
+        # Remove MongoDB _id from all sessions
+        for session in sessions:
+            session.pop("_id", None)
+
+        logger.info(f"Retrieved {len(sessions)} sessions for user: {user_id}")
+
+        return {
+            "user_id": user_id,
+            "sessions": sessions,
+            "total_sessions": len(sessions)
         }

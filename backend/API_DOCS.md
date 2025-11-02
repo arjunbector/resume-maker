@@ -405,42 +405,249 @@ Analyze a job description and extract all requirements, qualifications, and keyw
 
 ---
 
+#### Compare with User Profile
+**POST** `/api/v1/ai/compare`
+
+Compare job requirements from an analyzed session with the user's knowledge graph to identify missing and matched fields.
+
+**Authentication Required:**
+- Cookie: `access_token` OR
+- Header: `Authorization: Bearer {token}`
+
+**Query Parameters:**
+- `session_id` (required) - Session ID with analyzed job requirements
+
+**Example Request:**
+```
+POST /api/v1/ai/compare?session_id=550e8400-e29b-41d4-a716-446655440000
+```
+
+**Prerequisites:**
+- Session must exist and belong to the authenticated user
+- Session must have been analyzed first using `/api/v1/ai/analyze` (must have `parsed_requirements`)
+
+**Response:**
+```json
+{
+  "message": "Requirements comparison completed",
+  "user_id": "user-uuid-here",
+  "session_id": "550e8400-e29b-41d4-a716-446655440000",
+  "missing_fields": [
+    {
+      "name": "Docker",
+      "type": "skill",
+      "description": "User does not have Docker experience in profile",
+      "priority": 5,
+      "confidence": 0.9,
+      "source": "ai_inferred"
+    },
+    {
+      "name": "Kubernetes",
+      "type": "skill",
+      "description": "No Kubernetes experience found",
+      "priority": 3,
+      "confidence": 0.85,
+      "source": "ai_inferred"
+    }
+  ],
+  "matched_fields": [
+    {
+      "name": "Python",
+      "type": "skill",
+      "description": "User has 6 years of Python experience",
+      "priority": 5,
+      "confidence": 0.95,
+      "source": "user_knowledge_graph",
+      "value": "Python - 6 years"
+    },
+    {
+      "name": "FastAPI",
+      "type": "skill",
+      "description": "User has FastAPI projects in profile",
+      "priority": 5,
+      "confidence": 0.9,
+      "source": "user_knowledge_graph",
+      "value": "FastAPI projects: Resume Builder, API Gateway"
+    }
+  ],
+  "fill_suggestions": [
+    {
+      "field_name": "Docker",
+      "suggestion": "Add Docker containerization to your recent projects or create a demo project using Docker",
+      "category": "skill"
+    },
+    {
+      "field_name": "Kubernetes",
+      "suggestion": "Consider adding a certification or project that demonstrates Kubernetes orchestration",
+      "category": "skill"
+    }
+  ],
+  "total_missing": 2,
+  "total_matched": 8
+}
+```
+
+**What This Endpoint Does:**
+1. Retrieves the session and verifies ownership
+2. Compares each job requirement against the user's knowledge graph (education, experience, skills, projects, certifications)
+3. Identifies which requirements are missing from the user's profile
+4. Identifies which requirements the user already satisfies
+5. Provides actionable suggestions for filling missing fields
+6. Updates the session's `resume_state.missing_fields` and advances stage to `REQUIREMENTS_IDENTIFIED`
+
+**Session Updates:**
+The endpoint automatically updates the session with:
+- `resume_state.missing_fields`: List of requirements not found in user's profile
+- `resume_state.stage`: Set to `REQUIREMENTS_IDENTIFIED`
+- `resume_state.ai_context`: Summary with comparison statistics and fill suggestions
+- `resume_state.last_action`: Set to `requirements_compared`
+
+**Status Codes:**
+- `200` - Comparison completed successfully
+- `400` - Session has no parsed requirements (need to analyze first)
+- `401` - Not authenticated or invalid token
+- `403` - Session does not belong to authenticated user
+- `404` - Session not found
+- `500` - Server error
+
+---
+
 ### Sessions
 
 #### Create Session
 **POST** `/api/v1/sessions`
 
-Create a new session for a user with job details.
+Create a new blank session for the authenticated user. The session is created with empty job details that can be populated later using the update endpoint or the `/api/v1/ai/analyze` endpoint.
 
-**Query Parameters:**
-- `user_id` (required) - User's ID
+**Authentication Required:**
+- Cookie: `access_token` OR
+- Header: `Authorization: Bearer {token}`
 
 **Request Body:**
-```json
-{
-  "job_role": "string",
-  "company_name": "string",
-  "company_url": "string",
-  "job_description": "string",
-  "parsed_requirements": [],
-  "extracted_keywords": []
-}
-```
-
-*Note: `parsed_requirements` and `extracted_keywords` are optional and will be populated by AI analysis.*
+None (empty)
 
 **Response:**
 ```json
 {
   "message": "Session created successfully",
+  "session_id": "550e8400-e29b-41d4-a716-446655440000",
+  "user_id": "user-uuid-here"
+}
+```
+
+**Notes:**
+- Session is created with blank job details (empty strings and empty arrays)
+- Initial stage is set to `INIT`
+- Use the session_id with `/api/v1/ai/analyze` to populate job details
+- Or use `/api/v1/sessions` PUT endpoint to manually update session data
+
+**Status Codes:**
+- `200` - Session created successfully
+- `401` - Not authenticated or invalid token
+- `400` - User not found
+- `500` - Server error
+
+#### Get Session
+**GET** `/api/v1/sessions/{session_id}`
+
+Get complete session details by session_id.
+
+**Path Parameters:**
+- `session_id` (required) - Session ID
+
+**Response:**
+```json
+{
   "session_id": "string",
-  "user_id": "string"
+  "user_id": "string",
+  "job_details": {
+    "job_role": "Senior Backend Engineer",
+    "company_name": "Tech Corp",
+    "company_url": "https://techcorp.com/jobs/123",
+    "job_description": "We are looking for...",
+    "parsed_requirements": [
+      {
+        "name": "Python",
+        "type": "skill",
+        "description": "5+ years experience",
+        "priority": 5,
+        "confidence": 0.95,
+        "source": "ai_inferred",
+        "value": null
+      }
+    ],
+    "extracted_keywords": ["Python", "FastAPI", "MongoDB"]
+  },
+  "resume_state": {
+    "stage": "job_analyzed",
+    "required_fields": [...],
+    "missing_fields": [],
+    "ai_context": {
+      "summary": "Analyzed job for Senior Backend Engineer at Tech Corp",
+      "total_requirements": 15
+    },
+    "last_action": "job_analyzed"
+  },
+  "questionnaire": {
+    "questions": [],
+    "completion": 0.0
+  },
+  "last_active": "2025-11-02T12:00:00",
+  "created_at": "2025-11-02T10:00:00"
 }
 ```
 
 **Status Codes:**
-- `200` - Session created successfully
-- `400` - User not found
+- `200` - Session retrieved successfully
+- `404` - Session not found
+- `500` - Server error
+
+#### Get User Sessions
+**GET** `/api/v1/sessions/user/{user_id}`
+
+Get all sessions for a specific user, sorted by most recent activity.
+
+**Path Parameters:**
+- `user_id` (required) - User ID
+
+**Response:**
+```json
+{
+  "user_id": "string",
+  "sessions": [
+    {
+      "session_id": "string",
+      "user_id": "string",
+      "job_details": {
+        "job_role": "Senior Backend Engineer",
+        "company_name": "Tech Corp",
+        "company_url": "https://techcorp.com/jobs/123",
+        "job_description": "We are looking for...",
+        "parsed_requirements": [...],
+        "extracted_keywords": [...]
+      },
+      "resume_state": {
+        "stage": "job_analyzed",
+        "required_fields": [...],
+        "missing_fields": [],
+        "ai_context": {...},
+        "last_action": "job_analyzed"
+      },
+      "questionnaire": {
+        "questions": [],
+        "completion": 0.0
+      },
+      "last_active": "2025-11-02T12:00:00",
+      "created_at": "2025-11-02T10:00:00"
+    }
+  ],
+  "total_sessions": 1
+}
+```
+
+**Status Codes:**
+- `200` - Sessions retrieved successfully
+- `404` - User not found
 - `500` - Server error
 
 #### Update Session
