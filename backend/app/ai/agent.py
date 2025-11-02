@@ -59,51 +59,42 @@ class ResumeAgent:
                 api_key=os.getenv("GEMINI_API_KEY")
             )
 
-    def analyze_job_requirements(self, job_description: str, user_knowledge_graph: dict) -> dict:
+    def analyze_job_requirements(self, job_description: str) -> dict:
         """
-        Analyze job requirements and identify missing fields in user's knowledge graph.
+        Analyze job description and extract requirements without comparing to user data.
 
         Args:
             job_description: The job description text
-            user_knowledge_graph: User's knowledge graph with their professional info
 
         Returns:
             Dictionary with:
-            - missing_fields: List of missing field names
             - parsed_requirements: List of FieldMetadata objects
             - extracted_keywords: List of important keywords
         """
         try:
             logger.info("Analyzing job requirements...")
 
-            # Build prompt with job description and current knowledge graph
+            # Build prompt focused only on extracting requirements
             prompt = f"""
-You are a resume analysis expert. Analyze the job description and identify what information is missing from the candidate's profile.
+You are a job requirements analysis expert. Analyze the job description and extract all requirements, qualifications, and key information.
 
 **Job Description:**
 {job_description}
 
-**Candidate's Current Knowledge Graph:**
-- Education: {len(user_knowledge_graph.get('education', []))} entries
-- Work Experience: {len(user_knowledge_graph.get('work_experience', []))} entries
-- Research Work: {len(user_knowledge_graph.get('research_work', []))} entries
-- Projects: {len(user_knowledge_graph.get('projects', []))} entries
-- Certifications: {len(user_knowledge_graph.get('certifications', []))} entries
-- Skills: {', '.join(user_knowledge_graph.get('skills', [])) if user_knowledge_graph.get('skills') else 'None listed'}
-
 **Task:**
-1. Identify which fields from the knowledge graph (education, work_experience, research_work, projects, certifications, skills) are most relevant for this job
-2. Determine which relevant fields are missing or insufficient in the candidate's profile
-3. Extract key requirements and keywords from the job description
+1. Extract all requirements from the job description (skills, experience, education, certifications, etc.)
+2. Categorize each requirement by type (skill, education, certification, experience, project)
+3. Assign priority (1-5) where 5 is critical/required and 1 is nice-to-have
+4. Assign confidence (0.0-1.0) based on how explicitly the requirement is stated
+5. Extract important keywords and technologies mentioned
 
 **Return a valid JSON object with this exact structure:**
 {{
-  "missing_fields": ["field_name1", "field_name2"],
   "parsed_requirements": [
     {{
-      "name": "requirement name",
-      "type": "skill|education|certification|experience",
-      "description": "brief description",
+      "name": "requirement name (e.g., 'Python', 'Bachelor's Degree', 'Docker')",
+      "type": "skill|education|certification|experience|project",
+      "description": "brief description of the requirement",
       "priority": 1-5,
       "confidence": 0.0-1.0
     }}
@@ -111,10 +102,17 @@ You are a resume analysis expert. Analyze the job description and identify what 
   "extracted_keywords": ["keyword1", "keyword2", "keyword3"]
 }}
 
+**Guidelines:**
+- Priority 5: Explicitly required/must-have
+- Priority 4: Strongly preferred
+- Priority 3: Preferred/nice-to-have
+- Priority 2: Mentioned but optional
+- Priority 1: Tangentially related
+
 IMPORTANT: Return ONLY the JSON object, no additional text or explanation.
 """
 
-            system_prompt = "You are a professional resume analyzer. Always return valid JSON responses."
+            system_prompt = "You are a professional job requirements analyzer. Always return valid JSON responses."
 
             # Get response from LLM
             response = self.run_prompt(prompt, system_prompt)
@@ -131,7 +129,7 @@ IMPORTANT: Return ONLY the JSON object, no additional text or explanation.
             else:
                 result = json.loads(response)
 
-            logger.info(f"Analysis complete. Found {len(result.get('missing_fields', []))} missing fields")
+            logger.info(f"Analysis complete. Found {len(result.get('parsed_requirements', []))} requirements")
             return result
 
         except json.JSONDecodeError as e:
@@ -139,7 +137,6 @@ IMPORTANT: Return ONLY the JSON object, no additional text or explanation.
             logger.error(f"Response was: {response}")
             # Return fallback structure
             return {
-                "missing_fields": [],
                 "parsed_requirements": [],
                 "extracted_keywords": [],
                 "error": "Failed to parse AI response"

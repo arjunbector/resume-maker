@@ -288,7 +288,7 @@ Execute a custom prompt through the AI agent. Useful for testing, experimentatio
 #### Analyze Job Requirements
 **POST** `/api/v1/ai/analyze`
 
-Analyze a job description and identify missing fields in the authenticated user's profile. This endpoint compares the job requirements against the user's knowledge graph to determine what information needs to be added.
+Analyze a job description and extract all requirements, qualifications, and keywords. This endpoint does NOT compare against the user's profile - it purely extracts information from the job posting.
 
 **Authentication Required:**
 - Cookie: `access_token` OR
@@ -299,7 +299,8 @@ Analyze a job description and identify missing fields in the authenticated user'
 {
   "job_description": "string (required)",
   "job_role": "string (optional)",
-  "company_name": "string (optional)"
+  "company_name": "string (optional)",
+  "session_id": "string (optional)"
 }
 ```
 
@@ -308,9 +309,16 @@ Analyze a job description and identify missing fields in the authenticated user'
 {
   "job_description": "We are looking for a Senior Backend Engineer with 5+ years experience in Python, FastAPI, and MongoDB. Strong knowledge of REST APIs and microservices architecture required. Experience with Docker and Kubernetes is a plus.",
   "job_role": "Senior Backend Engineer",
-  "company_name": "Tech Corp"
+  "company_name": "Tech Corp",
+  "session_id": "550e8400-e29b-41d4-a716-446655440000"
 }
 ```
+
+**Note:** If `session_id` is provided, the endpoint will automatically update the session with:
+- Parsed requirements in `job_details.parsed_requirements`
+- Extracted keywords in `job_details.extracted_keywords`
+- Resume state updated to `JOB_ANALYZED` stage
+- Required fields populated in `resume_state`
 
 **Response:**
 ```json
@@ -319,43 +327,76 @@ Analyze a job description and identify missing fields in the authenticated user'
   "user_id": "string",
   "job_role": "Senior Backend Engineer",
   "company_name": "Tech Corp",
+  "session_id": "550e8400-e29b-41d4-a716-446655440000",
+  "session_updated": true,
   "analysis": {
-    "missing_fields": ["certifications", "projects"],
     "parsed_requirements": [
       {
         "name": "Python",
         "type": "skill",
-        "description": "5+ years experience required",
+        "description": "5+ years experience in Python programming",
         "priority": 5,
         "confidence": 0.95
       },
       {
         "name": "FastAPI",
         "type": "skill",
-        "description": "Backend framework",
-        "priority": 4,
+        "description": "Backend web framework",
+        "priority": 5,
+        "confidence": 0.95
+      },
+      {
+        "name": "MongoDB",
+        "type": "skill",
+        "description": "NoSQL database",
+        "priority": 5,
+        "confidence": 0.95
+      },
+      {
+        "name": "REST APIs",
+        "type": "experience",
+        "description": "Strong knowledge of REST APIs",
+        "priority": 5,
         "confidence": 0.9
       },
       {
-        "name": "Docker/Kubernetes",
+        "name": "Microservices",
+        "type": "experience",
+        "description": "Microservices architecture",
+        "priority": 5,
+        "confidence": 0.9
+      },
+      {
+        "name": "Docker",
+        "type": "skill",
+        "description": "Containerization (nice to have)",
+        "priority": 3,
+        "confidence": 0.7
+      },
+      {
+        "name": "Kubernetes",
         "type": "skill",
         "description": "Container orchestration (nice to have)",
         "priority": 3,
-        "confidence": 0.8
+        "confidence": 0.7
       }
     ],
-    "extracted_keywords": ["Python", "FastAPI", "MongoDB", "REST APIs", "microservices", "Docker", "Kubernetes"]
+    "extracted_keywords": ["Python", "FastAPI", "MongoDB", "REST APIs", "microservices", "Docker", "Kubernetes", "Backend Engineer", "5+ years"]
   },
-  "missing_fields": ["certifications", "projects"],
   "parsed_requirements": [...],
   "extracted_keywords": [...]
 }
 ```
 
+**Response Fields:**
+- `session_updated`: Boolean indicating whether the session was successfully updated (only present if `session_id` was provided)
+
 **Field Descriptions:**
-- `missing_fields`: Array of knowledge graph field names (education, work_experience, research_work, projects, certifications, skills) that are relevant for the job but missing or insufficient in the user's profile
-- `parsed_requirements`: Detailed list of specific requirements extracted from the job description with priority (1-5) and confidence (0.0-1.0) scores
-- `extracted_keywords`: Important keywords and skills mentioned in the job posting
+- `parsed_requirements`: Detailed list of specific requirements extracted from the job description
+  - `priority` (1-5): 5=critical/required, 4=strongly preferred, 3=preferred, 2=mentioned, 1=tangentially related
+  - `confidence` (0.0-1.0): How explicitly the requirement is stated in the job description
+  - `type`: Category (skill, education, certification, experience, project)
+- `extracted_keywords`: Important keywords, technologies, and phrases mentioned in the job posting
 
 **Status Codes:**
 - `200` - Analysis completed successfully
