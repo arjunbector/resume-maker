@@ -242,6 +242,128 @@ Update user fields by email.
 
 ---
 
+#### Add to Knowledge Graph
+**POST** `/api/v1/users/knowledge-graph/add`
+
+Add one or multiple items to different categories of the user's knowledge graph.
+
+**Authentication Required:**
+- Cookie: `access_token` OR
+- Header: `Authorization: Bearer {token}`
+
+**Request Body:**
+```json
+{
+  "education": [
+    {
+      "institution": "Stanford University",
+      "degree": "Bachelor of Science",
+      "field": "Computer Science",
+      "start_date": "2018-09",
+      "end_date": "2022-06",
+      "gpa": "3.8"
+    }
+  ],
+  "work_experience": [
+    {
+      "company": "Google",
+      "position": "Software Engineer",
+      "start_date": "2022-07",
+      "end_date": "present",
+      "description": "Worked on search infrastructure"
+    }
+  ],
+  "projects": [
+    {
+      "name": "Resume Builder",
+      "description": "AI-powered resume builder using FastAPI and MongoDB",
+      "technologies": ["Python", "FastAPI", "MongoDB", "React"],
+      "url": "https://github.com/user/resume-builder"
+    }
+  ],
+  "certifications": [
+    {
+      "name": "AWS Certified Solutions Architect",
+      "issuer": "Amazon Web Services",
+      "date": "2023-05",
+      "credential_id": "ABC123"
+    }
+  ],
+  "skills": ["Python", "FastAPI", "Docker", "Kubernetes"],
+  "research_work": [],
+  "misc": {
+    "languages": ["English", "Spanish"],
+    "hobbies": ["Photography", "Hiking"]
+  }
+}
+```
+
+**Notes:**
+- All fields are optional - you can update one or multiple categories
+- Items are **appended** to existing data (not replaced)
+- For skills: duplicates are automatically avoided
+- For misc: dictionary values are merged with existing misc data
+- You can add a single item or multiple items to each category
+
+**Example - Adding only skills:**
+```json
+{
+  "skills": ["React", "Node.js", "TypeScript"]
+}
+```
+
+**Example - Adding multiple categories:**
+```json
+{
+  "projects": [
+    {
+      "name": "E-commerce Platform",
+      "description": "Full-stack e-commerce application",
+      "technologies": ["React", "Node.js", "PostgreSQL"]
+    }
+  ],
+  "skills": ["PostgreSQL", "Redis"],
+  "certifications": [
+    {
+      "name": "Docker Certified Associate",
+      "issuer": "Docker",
+      "date": "2024-01"
+    }
+  ]
+}
+```
+
+**Response:**
+```json
+{
+  "message": "Items added to knowledge graph successfully",
+  "user_id": "550e8400-e29b-41d4-a716-446655440000",
+  "email": "user@example.com",
+  "added_items": {
+    "education": 1,
+    "work_experience": 1,
+    "projects": 1,
+    "certifications": 1,
+    "skills": 3
+  },
+  "total_items_added": 7
+}
+```
+
+**Response Fields:**
+- `added_items`: Breakdown of how many items were added to each category
+- `total_items_added`: Total number of items added across all categories
+- For skills: shows count of new skills (duplicates not counted)
+
+**Status Codes:**
+- `200` - Items added successfully
+- `400` - No items provided to add
+- `401` - Not authenticated or invalid token
+- `404` - User not found
+- `500` - Server error
+
+---
+
 ### AI
 
 #### Run Custom Prompt
