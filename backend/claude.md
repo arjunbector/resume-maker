@@ -62,7 +62,7 @@ The application follows a modular FastAPI architecture with clear separation of 
 
 **Database Layer** ([app/database/](app/database/))
 - `client.py` - MongoDB singleton connection manager
-- `models.py` - Pydantic models for data validation (User, Session, JobDetails, ResumeState, Questionnaire, KnowledgeGraph)
+- `models.py` - Pydantic models for data validation (User, Session, JobDetails, ResumeState, Questionnaire, KnowledgeGraph, ResumeStage, FieldMetadata, QuestionItem)
 - `operations.py` - Database operations abstracted into UserOperations and SessionOperations classes
 
 **API Routers** ([app/routers/](app/routers/))
@@ -99,11 +99,47 @@ Structured storage for user's professional information:
 - skills (list of skills)
 - misc (dict for any additional information)
 
+**JobDetails Model:**
+- job_role, company_name, company_url, job_description (basic info)
+- parsed_requirements (list of FieldMetadata - AI-extracted requirements)
+- extracted_keywords (list of key skills/terms from job description)
+
+**FieldMetadata Model:**
+Metadata for job requirements and user profile fields:
+- name (field name)
+- type (field type, e.g., "skill", "work_experience")
+- description (optional description)
+- priority (1-5, importance level)
+- confidence (0-1, AI confidence score)
+- source ("ai_inferred" or "user_input")
+- value (optional field value)
+
+**ResumeState Model:**
+Tracks the resume generation workflow:
+- stage (ResumeStage enum: INIT, JOB_ANALYZED, REQUIREMENTS_IDENTIFIED, QUESTIONNAIRE_PENDING, READY_FOR_RESUME, COMPLETED, ERROR)
+- required_fields (list of FieldMetadata - what's needed)
+- missing_fields (list of FieldMetadata - what's still missing)
+- ai_context (dict with AI analysis summary)
+- last_action (string describing last operation)
+
+**QuestionItem Model:**
+Individual questionnaire question:
+- id (unique question identifier)
+- question (question text)
+- related_field (which field this question gathers info for)
+- answer (user's answer, optional)
+- confidence (AI confidence in answer quality)
+- status ("unanswered", "answered", "reviewed")
+
+**Questionnaire Model:**
+- questions (list of QuestionItem objects)
+- completion (0.0-100.0 percentage of answered questions)
+
 **Session Model:**
 - session_id, user_id (UUIDs)
-- job_details (role, company, URL, description)
-- resume_state (status, missing_fields)
-- questionnaire (questions list, answers dict)
+- job_details (JobDetails object with parsed requirements)
+- resume_state (ResumeState tracking workflow stage)
+- questionnaire (Questionnaire with context-aware questions)
 - timestamps (last_active, created_at)
 
 ### Database Collections

@@ -1,6 +1,6 @@
 from loguru import logger
 from database.client import mongodb
-from database.models import User, Session, ResumeState, Questionnaire, KnowledgeGraph
+from database.models import User, Session, ResumeState, Questionnaire, KnowledgeGraph, ResumeStage
 from uuid import uuid4
 from typing import Dict, Any, Optional
 from datetime import datetime
@@ -133,14 +133,23 @@ class SessionOperations:
         # Generate session_id
         session_id = str(uuid4())
 
-        # Create session with default values
+        # Create session with default values using new models
         now = datetime.utcnow()
         session = Session(
             session_id=session_id,
             user_id=user_id,
             job_details=job_details,
-            resume_state=ResumeState(status="incomplete", missing_fields=[]),
-            questionnaire=Questionnaire(questions=[], answers={}),
+            resume_state=ResumeState(
+                stage=ResumeStage.INIT,
+                required_fields=[],
+                missing_fields=[],
+                ai_context={},
+                last_action="session_created"
+            ),
+            questionnaire=Questionnaire(
+                questions=[],
+                completion=0.0
+            ),
             last_active=now,
             created_at=now
         )

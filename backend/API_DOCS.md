@@ -258,9 +258,13 @@ Create a new session for a user with job details.
   "job_role": "string",
   "company_name": "string",
   "company_url": "string",
-  "job_description": "string"
+  "job_description": "string",
+  "parsed_requirements": [],
+  "extracted_keywords": []
 }
 ```
+
+*Note: `parsed_requirements` and `extracted_keywords` are optional and will be populated by AI analysis.*
 
 **Response:**
 ```json
@@ -291,22 +295,62 @@ Update session fields by session_id.
     "job_role": "string",
     "company_name": "string",
     "company_url": "string",
-    "job_description": "string"
+    "job_description": "string",
+    "parsed_requirements": [
+      {
+        "name": "Python",
+        "type": "skill",
+        "description": "Backend development",
+        "priority": 1,
+        "confidence": 0.95,
+        "source": "ai_inferred",
+        "value": null
+      }
+    ],
+    "extracted_keywords": ["Python", "FastAPI", "MongoDB"]
   },
   "resume_state": {
-    "status": "string",
-    "missing_fields": ["string"]
+    "stage": "requirements_identified",
+    "required_fields": [
+      {
+        "name": "Python experience",
+        "type": "work_experience",
+        "priority": 1,
+        "confidence": 0.9
+      }
+    ],
+    "missing_fields": [],
+    "ai_context": {
+      "summary": "Job requires backend skills"
+    },
+    "last_action": "requirements_analyzed"
   },
   "questionnaire": {
-    "questions": ["string"],
-    "answers": {
-      "question": "answer"
-    }
+    "questions": [
+      {
+        "id": "q1",
+        "question": "What Python frameworks have you used?",
+        "related_field": "work_experience",
+        "answer": null,
+        "confidence": null,
+        "status": "unanswered"
+      }
+    ],
+    "completion": 0.0
   }
 }
 ```
 
-*Note: `session_id` cannot be updated. `last_active` is automatically updated.*
+*Note: `session_id` cannot be updated. `last_active` is automatically updated. All fields are optional.*
+
+**Resume Stage Values:**
+- `init` - Session just created
+- `job_analyzed` - Job description analyzed
+- `requirements_identified` - Requirements extracted
+- `questionnaire_pending` - Waiting for user responses
+- `ready_for_resume` - All info collected
+- `completed` - Resume generated
+- `error` - Error occurred
 
 **Response:**
 ```json

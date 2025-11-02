@@ -1,26 +1,58 @@
 from pydantic import BaseModel
 from typing import Dict, List, Optional
 from datetime import datetime
+from enum import Enum
 
 class PromptRequest(BaseModel):
     prompt: str
+
+class ResumeStage(str, Enum):
+    INIT = "init"
+    JOB_ANALYZED = "job_analyzed"
+    REQUIREMENTS_IDENTIFIED = "requirements_identified"
+    QUESTIONNAIRE_PENDING = "questionnaire_pending"
+    READY_FOR_RESUME = "ready_for_resume"
+    COMPLETED = "completed"
+    ERROR = "error"
+
+class FieldMetadata(BaseModel):
+    name: str
+    type: Optional[str] = None
+    description: Optional[str] = None
+    priority: Optional[int] = 1
+    confidence: Optional[float] = None
+    source: Optional[str] = "ai_inferred"  # or "user_input"
+    value: Optional[str] = None
 
 class JobDetails(BaseModel):
     job_role: str
     company_name: str
     company_url: str
     job_description: str
+    parsed_requirements: Optional[List[FieldMetadata]] = []
+    extracted_keywords: Optional[List[str]] = []
 
 # Alias for backward compatibility
 JobQuestionsRequest = JobDetails
 
 class ResumeState(BaseModel):
-    status: str
-    missing_fields: List[str]
+    stage: ResumeStage = ResumeStage.INIT
+    required_fields: List[FieldMetadata] = []
+    missing_fields: List[FieldMetadata] = []
+    ai_context: Optional[Dict] = {}  # summary snapshot from last AI call
+    last_action: Optional[str] = None
+
+class QuestionItem(BaseModel):
+    id: str
+    question: str
+    related_field: str
+    answer: Optional[str] = None
+    confidence: Optional[float] = None
+    status: str = "unanswered"  # or "answered", "reviewed"
 
 class Questionnaire(BaseModel):
-    questions: List[str]
-    answers: Dict[str, str]
+    questions: List[QuestionItem] = []
+    completion: float = 0.0  # percentage of answered questions
 
 class SignupRequest(BaseModel):
     email: str
