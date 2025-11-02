@@ -285,6 +285,83 @@ Execute a custom prompt through the AI agent. Useful for testing, experimentatio
 - `200` - Prompt executed successfully
 - `500` - Server error
 
+#### Analyze Job Requirements
+**POST** `/api/v1/ai/analyze`
+
+Analyze a job description and identify missing fields in the authenticated user's profile. This endpoint compares the job requirements against the user's knowledge graph to determine what information needs to be added.
+
+**Authentication Required:**
+- Cookie: `access_token` OR
+- Header: `Authorization: Bearer {token}`
+
+**Request Body:**
+```json
+{
+  "job_description": "string (required)",
+  "job_role": "string (optional)",
+  "company_name": "string (optional)"
+}
+```
+
+**Example Request:**
+```json
+{
+  "job_description": "We are looking for a Senior Backend Engineer with 5+ years experience in Python, FastAPI, and MongoDB. Strong knowledge of REST APIs and microservices architecture required. Experience with Docker and Kubernetes is a plus.",
+  "job_role": "Senior Backend Engineer",
+  "company_name": "Tech Corp"
+}
+```
+
+**Response:**
+```json
+{
+  "message": "Job analysis completed",
+  "user_id": "string",
+  "job_role": "Senior Backend Engineer",
+  "company_name": "Tech Corp",
+  "analysis": {
+    "missing_fields": ["certifications", "projects"],
+    "parsed_requirements": [
+      {
+        "name": "Python",
+        "type": "skill",
+        "description": "5+ years experience required",
+        "priority": 5,
+        "confidence": 0.95
+      },
+      {
+        "name": "FastAPI",
+        "type": "skill",
+        "description": "Backend framework",
+        "priority": 4,
+        "confidence": 0.9
+      },
+      {
+        "name": "Docker/Kubernetes",
+        "type": "skill",
+        "description": "Container orchestration (nice to have)",
+        "priority": 3,
+        "confidence": 0.8
+      }
+    ],
+    "extracted_keywords": ["Python", "FastAPI", "MongoDB", "REST APIs", "microservices", "Docker", "Kubernetes"]
+  },
+  "missing_fields": ["certifications", "projects"],
+  "parsed_requirements": [...],
+  "extracted_keywords": [...]
+}
+```
+
+**Field Descriptions:**
+- `missing_fields`: Array of knowledge graph field names (education, work_experience, research_work, projects, certifications, skills) that are relevant for the job but missing or insufficient in the user's profile
+- `parsed_requirements`: Detailed list of specific requirements extracted from the job description with priority (1-5) and confidence (0.0-1.0) scores
+- `extracted_keywords`: Important keywords and skills mentioned in the job posting
+
+**Status Codes:**
+- `200` - Analysis completed successfully
+- `401` - Not authenticated or invalid token
+- `500` - Server error
+
 ---
 
 ### Sessions
