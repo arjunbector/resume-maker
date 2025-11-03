@@ -77,6 +77,7 @@ class User(BaseModel):
     email: str
     hashed_password: str
     phone: Optional[str] = ""
+    resume_email: Optional[str] = ""
     current_job_title: Optional[str] = ""
     socials: Optional[Dict[str, str]] = {}
     address: Optional[str] = ""
@@ -87,6 +88,7 @@ class UserResponse(BaseModel):
     name: str
     email: str
     phone: str
+    resume_email: str
     current_job_title: str
     socials: Dict[str, str]
     address: str

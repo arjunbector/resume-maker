@@ -175,6 +175,8 @@ Supports both cookie-based and header-based authentication.
   "name": "string",
   "email": "string",
   "phone": "string",
+  "resume_email": "string",
+  "current_job_title": "string",
   "socials": {
     "linkedin": "string"
   },
@@ -270,6 +272,7 @@ Update current authenticated user's profile. Uses authentication (cookie or Auth
 {
   "name": "string",
   "phone": "string",
+  "resume_email": "string",
   "current_job_title": "string",
   "socials": {
     "linkedin": "string"

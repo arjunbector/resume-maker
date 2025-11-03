@@ -89,8 +89,9 @@ The application follows a modular FastAPI architecture with clear separation of 
 
 **User Model:**
 - user_id (auto-generated UUID)
-- email, hashed_password (bcrypt)
-- name, phone, current_job_title, address (optional fields with defaults)
+- email, hashed_password (bcrypt) - email is for authentication
+- name, phone, resume_email, current_job_title, address (optional fields with defaults)
+- resume_email - separate email to display on resume (optional, defaults to empty string)
 - socials (dict for LinkedIn, etc.)
 - knowledge_graph (KnowledgeGraph object with user's professional details)
 
