@@ -1,6 +1,6 @@
-import { auth } from "@/auth";
 import SignIn from "@/components/sign-in";
 import { SignOut } from "@/components/sign-out";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -9,31 +9,26 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import {
+  ArrowRight,
+  BarChart3,
   Brain,
-  FileText,
-  Shield,
-  Zap,
-  Users,
-  Target,
+  CheckCircle,
   Download,
   Github,
   Linkedin,
-  CheckCircle,
-  ArrowRight,
-  Sparkles,
-  BarChart3,
   Lock,
-  Globe,
+  Sparkles,
   Star,
-  TrendingUp,
-  Clock,
+  Target,
+  Users,
+  Zap
 } from "lucide-react";
 import Link from "next/link";
 
 export default async function Home() {
-  const session = await auth();
+
+  const session = null;
 
   if (session) {
     return (

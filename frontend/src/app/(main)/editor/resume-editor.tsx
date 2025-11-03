@@ -1,13 +1,14 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import ResumePreviewSection from "./resume-preview-section";
 import { steps } from "./steps";
 import BreadCrumbs from "./bread-crumbs";
 import Footer from "./footer";
 import { ResumeValues } from "@/lib/validations";
+import { useMutation } from "@tanstack/react-query";
 
 // interface ResumeEditorProps {
 //   resumeToEdit: ResumeServerData | null;
@@ -15,6 +16,32 @@ import { ResumeValues } from "@/lib/validations";
 
 export default function ResumeEditor() {
   const searchParams = useSearchParams();
+  const router = useRouter();
+
+  const mutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/sessions/new`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      const data = await res.json();
+      return data.session_id;
+    },
+    onSuccess: (data) => {
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.set("resumeId", data);
+      window.history.pushState(null, "", `?${newSearchParams.toString()}`);
+    },
+    onError: () => {
+      router.push("/");
+    },
+  });
 
   const [resumeData, setResumeData] = useState<ResumeValues>({
     generalInfo: {
@@ -41,6 +68,14 @@ export default function ResumeEditor() {
   });
   console.log(resumeData);
   const [showSmResumePreview, setShowSmResumePreview] = useState(false);
+
+  const resumeId = searchParams.get("resumeId");
+  useEffect(() => {
+    // Only create a new session if there's no resumeId in the URL
+    if (!resumeId) {
+      mutation.mutate();
+    }
+  }, []); // Empty dependency array to run only once on mount
 
   const currentStep = searchParams.get("step") || steps[0].key;
   function setStep(key: string) {
