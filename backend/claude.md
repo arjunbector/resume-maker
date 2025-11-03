@@ -90,7 +90,7 @@ The application follows a modular FastAPI architecture with clear separation of 
 **User Model:**
 - user_id (auto-generated UUID)
 - email, hashed_password (bcrypt)
-- name, phone, address (optional fields with defaults)
+- name, phone, current_job_title, address (optional fields with defaults)
 - socials (dict for LinkedIn, etc.)
 - knowledge_graph (KnowledgeGraph object with user's professional details)
 
@@ -142,6 +142,7 @@ Individual questionnaire question:
 
 **Session Model:**
 - session_id, user_id (UUIDs)
+- resume_name, resume_description (optional fields for naming/describing the resume)
 - job_details (JobDetails object with parsed requirements)
 - resume_state (ResumeState tracking workflow stage)
 - questionnaire (Questionnaire with context-aware questions)
@@ -158,6 +159,10 @@ Individual questionnaire question:
 The main AI agent for resume generation and analysis:
 - Supports multiple LLM providers (Gemini, Ollama)
 - `run_prompt(prompt, system_prompt)` - Execute arbitrary prompts with optional system context
+- `analyze_job_requirements(job_description)` - Extract requirements from job postings
+- `compare_and_find_missing_fields(parsed_requirements, user_knowledge_graph)` - Identify gaps in user profile
+- `generate_questionnaire(missing_fields)` - Create short, targeted questions for missing information
+- `process_answer(question, answer, related_field, field_type)` - Extract structured data from user answers
 - Automatic model initialization based on provider string
 - Built on LiteLLMModel for flexible provider support
 
@@ -260,13 +265,15 @@ def run_custom_prompt(request: CustomPromptRequest, app_request: Request):
 ```
 
 ### Other Notes
-- CORS is configured to allow all origins for development
+- **CORS middleware must be added BEFORE routers** in main.py for proper functionality
+- CORS is configured to allow all origins for development with credentials support
 - JWT tokens use HS256 algorithm with SECRET_KEY from environment
 - Cookies are httpOnly for security (prevents XSS attacks)
-- In production, set cookie `secure=True` to require HTTPS
+- Cookie settings use `samesite="none"` and `secure=True` for cross-origin requests
 - The job-questions endpoint is currently commented out in main.py but the pipeline infrastructure remains in place
 - Web scraper limits content (10 headings, 15 paragraphs, 5000 chars) to manage response size
 - Session operations automatically update last_active timestamp
+- Most user and session endpoints now use authentication and don't require manual user_id/email parameters
 
 ## Security Considerations
 
@@ -275,6 +282,7 @@ def run_custom_prompt(request: CustomPromptRequest, app_request: Request):
 - Token also returned in response body for clients that need header-based auth
 - Token expiry set to 30 days
 - Authentication dependency checks cookie first, then Authorization header
+- Cookie settings: `samesite="none"`, `secure=True` (required for cross-origin requests)
 - SECRET_KEY should be a strong random value in production
+- Frontend must include `credentials: 'include'` (fetch) or `withCredentials: true` (axios)
 - Consider adding rate limiting for auth endpoints in production
-- Cookie `secure` flag should be True when using HTTPS

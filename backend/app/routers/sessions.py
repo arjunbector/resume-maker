@@ -55,14 +55,16 @@ def get_session(session_id: str):
         logger.error(f"Error retrieving session: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to retrieve session: {str(e)}")
 
-@router.get("/user/{user_id}")
-def get_user_sessions(user_id: str):
+@router.get("/user/all")
+def get_user_sessions(current_user: dict = Depends(get_current_user)):
     """
-    Get all sessions for a specific user.
+    Get all sessions for the authenticated user.
 
+    Uses authentication (cookie or Authorization header) to identify the user.
     Returns all sessions sorted by last_active (most recent first).
     """
     try:
+        user_id = current_user['user_id']
         logger.info(f"Retrieving all sessions for user_id: {user_id}")
         result = SessionOperations.get_user_sessions(user_id)
         return result

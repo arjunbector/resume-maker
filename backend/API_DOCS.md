@@ -11,6 +11,81 @@ All protected endpoints support two authentication methods:
 
 The server checks for the token in cookies first, then falls back to the Authorization header.
 
+**Cookie Configuration:**
+- `httpOnly: true` - Prevents XSS attacks
+- `samesite: "none"` - Allows cross-origin requests
+- `secure: true` - Requires HTTPS
+- `max_age: 30 days` - Token expiration
+
+**Frontend Requirements:**
+When making requests from a frontend on a different origin, you MUST include credentials:
+- **fetch:** `credentials: 'include'`
+- **axios:** `withCredentials: true`
+
+Example:
+```javascript
+// fetch
+fetch('http://127.0.0.1:8000/api/v1/users', {
+  credentials: 'include'
+})
+
+// axios
+axios.get('http://127.0.0.1:8000/api/v1/users', {
+  withCredentials: true
+})
+```
+
+## Complete Workflow
+
+### Resume Building Flow
+
+1. **User Authentication**
+   - Sign up: `POST /api/v1/auth/signup`
+   - Login: `POST /api/v1/auth/login`
+   - Get profile: `GET /api/v1/auth/me`
+
+2. **Build User Profile**
+   - Update basic info: `PUT /api/v1/users` (name, phone, current_job_title)
+   - Add knowledge graph data: `POST /api/v1/users/knowledge-graph/add`
+
+3. **Create Resume Session**
+   - Create blank session: `POST /api/v1/sessions/new`
+   - Returns `session_id` for tracking
+
+4. **Analyze Job Posting**
+   - Analyze job: `POST /api/v1/ai/analyze`
+   - Provide job description, role, company name
+   - AI extracts requirements and keywords
+   - Session updated with parsed requirements
+   - Stage: `JOB_ANALYZED`
+
+5. **Compare with Profile**
+   - Compare: `POST /api/v1/ai/compare?session_id=...`
+   - AI identifies missing and matched fields
+   - **If no missing fields:** Stage → `READY_FOR_RESUME`
+   - **If missing fields:** Stage → `REQUIREMENTS_IDENTIFIED`
+
+6. **Fill Missing Information** (if needed)
+   - Generate questionnaire: `POST /api/v1/ai/generate-questionnaire?session_id=...`
+   - AI creates short, targeted questions
+   - Stage: `QUESTIONNAIRE_PENDING`
+   - Answer questions: `POST /api/v1/ai/answer-question` (repeat for each)
+   - Each answer automatically updates knowledge graph
+   - When all answered: Stage → `READY_FOR_RESUME`
+
+7. **Generate Resume** (to be implemented)
+   - Use session data to generate tailored resume
+   - Stage: `COMPLETED`
+
+**Session States:**
+- `INIT` - Session created
+- `JOB_ANALYZED` - Job requirements extracted
+- `REQUIREMENTS_IDENTIFIED` - Missing fields identified
+- `QUESTIONNAIRE_PENDING` - Questions generated, awaiting answers
+- `READY_FOR_RESUME` - All data collected, ready for generation
+- `COMPLETED` - Resume generated
+- `ERROR` - Error occurred
+
 ## Endpoints
 
 ### Authentication
@@ -145,10 +220,11 @@ Logout user by removing the access token cookie.
 #### Get User
 **GET** `/api/v1/users`
 
-Get user by email.
+Get current authenticated user's profile. Uses authentication (cookie or Authorization header) to automatically identify the user.
 
-**Query Parameters:**
-- `email` (required) - User's email address
+**Authentication Required:**
+- Cookie: `access_token` OR
+- Header: `Authorization: Bearer {token}`
 
 **Response:**
 ```json
@@ -157,6 +233,7 @@ Get user by email.
   "name": "string",
   "email": "string",
   "phone": "string",
+  "current_job_title": "string",
   "socials": {
     "linkedin": "string"
   },
@@ -175,22 +252,25 @@ Get user by email.
 
 **Status Codes:**
 - `200` - User found
+- `401` - Not authenticated or invalid token
 - `404` - User not found
 - `500` - Server error
 
 #### Update User
 **PUT** `/api/v1/users`
 
-Update user fields by email.
+Update current authenticated user's profile. Uses authentication (cookie or Authorization header) to automatically identify the user.
 
-**Query Parameters:**
-- `email` (required) - User's email address
+**Authentication Required:**
+- Cookie: `access_token` OR
+- Header: `Authorization: Bearer {token}`
 
 **Request Body:**
 ```json
 {
   "name": "string",
   "phone": "string",
+  "current_job_title": "string",
   "socials": {
     "linkedin": "string"
   },
@@ -224,7 +304,7 @@ Update user fields by email.
 }
 ```
 
-*Note: `email`, `user_id`, and `hashed_password` cannot be updated. All fields are optional.*
+*Note: `email`, `user_id`, and `hashed_password` cannot be updated. All fields are optional. User is identified automatically via authentication.*
 
 **Response:**
 ```json
@@ -237,6 +317,7 @@ Update user fields by email.
 
 **Status Codes:**
 - `200` - User updated successfully
+- `401` - Not authenticated or invalid token
 - `404` - User not found
 - `500` - Server error
 
@@ -944,6 +1025,8 @@ Get complete session details by session_id.
 {
   "session_id": "string",
   "user_id": "string",
+  "resume_name": "My Software Engineer Resume",
+  "resume_description": "Tailored for Tech Corp Senior Backend position",
   "job_details": {
     "job_role": "Senior Backend Engineer",
     "company_name": "Tech Corp",
@@ -987,12 +1070,13 @@ Get complete session details by session_id.
 - `500` - Server error
 
 #### Get User Sessions
-**GET** `/api/v1/sessions/user/{user_id}`
+**GET** `/api/v1/sessions/user/all`
 
-Get all sessions for a specific user, sorted by most recent activity.
+Get all sessions for the authenticated user, sorted by most recent activity. Uses authentication (cookie or Authorization header) to automatically identify the user.
 
-**Path Parameters:**
-- `user_id` (required) - User ID
+**Authentication Required:**
+- Cookie: `access_token` OR
+- Header: `Authorization: Bearer {token}`
 
 **Response:**
 ```json
@@ -1002,6 +1086,8 @@ Get all sessions for a specific user, sorted by most recent activity.
     {
       "session_id": "string",
       "user_id": "string",
+      "resume_name": "My Software Engineer Resume",
+      "resume_description": "Tailored for Tech Corp Senior Backend position",
       "job_details": {
         "job_role": "Senior Backend Engineer",
         "company_name": "Tech Corp",
@@ -1031,6 +1117,7 @@ Get all sessions for a specific user, sorted by most recent activity.
 
 **Status Codes:**
 - `200` - Sessions retrieved successfully
+- `401` - Not authenticated or invalid token
 - `404` - User not found
 - `500` - Server error
 

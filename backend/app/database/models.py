@@ -95,6 +95,8 @@ class UserResponse(BaseModel):
 class Session(BaseModel):
     session_id: str
     user_id: str
+    resume_name: Optional[str] = ""
+    resume_description: Optional[str] = ""
     job_details: JobDetails
     resume_state: ResumeState
     questionnaire: Questionnaire
