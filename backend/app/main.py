@@ -49,47 +49,6 @@ app.include_router(ai.router)
 @app.get("/")
 def root():
     return {"message": "Ping Pong!"}
-
-# @app.post("/api/v1/job-questions")
-# def generate_job_questions(request: JobQuestionsRequest):
-#     try:
-#         logger.info(f"Generating job questions for role: {request.job_role} at {request.company_name}")
-
-#         # Generate the prompt from the request
-#         prompt = generate_prompt(request)
-
-#         # Run the agent with the tool
-#         result = pipeline.agent.run(prompt)
-
-#         # Parse questions from the result
-#         questions = parse_questions(result)
-
-#         logger.debug(f"ToolCallingAgent result: {result}")
-#         logger.info(f"Generated {len(questions)} questions")
-
-#         # Validate that we have questions
-#         if not questions or len(questions) == 0:
-#             logger.warning("No questions could be generated from the response")
-#             return {
-#                 "error": "No questions could be generated from the response",
-#                 "raw_response": result
-#             }
-
-#         return {
-#             "questions": questions,
-#             "total_questions": len(questions),
-#             "job_role": request.job_role,
-#             "company_url": request.company_url
-#         }
-
-#     except Exception as e:
-#         logger.error(f"Error in job-questions endpoint: {str(e)}")
-#         return {
-#             "error": f"Failed to generate questions: {str(e)}",
-#             "job_role": request.job_role,
-#             "company_url": request.company_url
-#         }
-
     
 
 if __name__ == "__main__":
