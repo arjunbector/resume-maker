@@ -29,8 +29,8 @@ def signup(request: SignupRequest, response: Response):
             value=access_token,
             httponly=True,
             max_age=30 * 24 * 60 * 60,  # 30 days in seconds
-            samesite="lax",
-            secure=False  # Set to True in production with HTTPS
+            samesite="none",  # Required for cross-origin requests
+            secure=True  # Required when samesite="none"
         )
 
         logger.info(f"User signed up successfully: {request.email}")
@@ -74,8 +74,8 @@ def login(request: LoginRequest, response: Response):
             value=access_token,
             httponly=True,
             max_age=30 * 24 * 60 * 60,  # 30 days in seconds
-            samesite="lax",
-            secure=False  # Set to True in production with HTTPS
+            samesite="none",  # Required for cross-origin requests
+            secure=True  # Required when samesite="none"
         )
 
         logger.info(f"User logged in successfully: {request.email}")
@@ -109,8 +109,12 @@ def logout(response: Response):
     Logout user by removing the access token cookie
     """
     try:
-        # Remove cookie
-        response.delete_cookie(key="access_token")
+        # Remove cookie with same settings as when it was set
+        response.delete_cookie(
+            key="access_token",
+            samesite="none",
+            secure=True
+        )
 
         logger.info("User logged out successfully")
 
