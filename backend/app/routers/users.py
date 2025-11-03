@@ -19,8 +19,13 @@ class KnowledgeGraphUpdate(BaseModel):
     misc: Optional[Dict] = None
 
 @router.get("")
-def get_user(email: str):
+def get_user(current_user: dict = Depends(get_current_user)):
+    """
+    Get current authenticated user's profile.
+    Uses authentication (cookie or Authorization header) to identify the user.
+    """
     try:
+        email = current_user['email']
         logger.info(f"Fetching user with email: {email}")
         result = UserOperations.get_user(email)
         return result
@@ -31,8 +36,13 @@ def get_user(email: str):
         raise HTTPException(status_code=500, detail=f"Failed to fetch user: {str(e)}")
 
 @router.put("")
-def update_user(email: str, updates: Dict[str, Any]):
+def update_user(updates: Dict[str, Any], current_user: dict = Depends(get_current_user)):
+    """
+    Update current authenticated user's profile.
+    Uses authentication (cookie or Authorization header) to identify the user.
+    """
     try:
+        email = current_user['email']
         logger.info(f"Updating user with email: {email}")
         result = UserOperations.update_user(email, updates)
         return result
