@@ -77,6 +77,7 @@ class User(BaseModel):
     email: str
     hashed_password: str
     phone: Optional[str] = ""
+    current_job_title: Optional[str] = ""
     socials: Optional[Dict[str, str]] = {}
     address: Optional[str] = ""
     knowledge_graph: Optional[KnowledgeGraph] = KnowledgeGraph()
@@ -86,6 +87,7 @@ class UserResponse(BaseModel):
     name: str
     email: str
     phone: str
+    current_job_title: str
     socials: Dict[str, str]
     address: str
     knowledge_graph: KnowledgeGraph
