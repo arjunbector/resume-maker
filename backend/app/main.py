@@ -31,13 +31,7 @@ app = FastAPI(lifespan=lifespan)
 
 pipeline = JobQuestionsPipeline(model="gemini/gemini-2.5-flash")
 
-# Include routers
-app.include_router(auth.router)
-app.include_router(users.router)
-app.include_router(sessions.router)
-app.include_router(ai.router)
-
-# Add CORS middleware to allow all origins
+# Add CORS middleware BEFORE including routers
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # Allow all origins
@@ -45,6 +39,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include routers
+app.include_router(auth.router)
+app.include_router(users.router)
+app.include_router(sessions.router)
+app.include_router(ai.router)
 
 @app.get("/")
 def root():
