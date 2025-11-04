@@ -69,7 +69,7 @@ The application follows a modular FastAPI architecture with clear separation of 
 - `auth.py` - Authentication endpoints (signup, login, logout, me at `/api/v1/auth`)
 - `users.py` - User management endpoints (GET/PUT at `/api/v1/users`, POST `/knowledge-graph/add`)
 - `sessions.py` - Session management (POST/PUT/GET at `/api/v1/sessions`, GET `/resume-data` for complete resume data)
-- `ai.py` - AI endpoints (analyze, compare, generate-questionnaire, answer-question at `/api/v1/ai`)
+- `ai.py` - AI endpoints (analyze, compare, generate-questionnaire, answer-question, optimize-knowledge-graph, parse-text at `/api/v1/ai`)
 
 **AI Module** ([app/ai/](app/ai/))
 - `agent.py` - ResumeAgent class for AI-powered resume generation and analysis (supports Gemini and Ollama via LiteLLM)
@@ -165,6 +165,7 @@ The main AI agent for resume generation and analysis:
 - `generate_questionnaire(missing_fields)` - Create short, targeted questions for missing information
 - `process_answer(question, answer, related_field, field_type)` - Extract structured data from user answers
 - `optimize_knowledge_graph(knowledge_graph)` - Restructure knowledge graph by moving misplaced items to proper sections
+- `parse_free_text_to_knowledge_graph(text)` - Parse free-form text (projects, education, work experience, skills, etc.) into structured knowledge graph data with automatic category detection and schema compliance
 - Automatic model initialization based on provider string
 - Built on LiteLLMModel for flexible provider support
 

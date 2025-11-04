@@ -393,13 +393,13 @@ You are an expert at processing resume information and structuring it for a know
 4. Assign a confidence score (0.0-1.0) based on answer quality and completeness
 
 **Knowledge Graph Categories and Schemas:**
-- **education**: {{"institution": str, "degree": str, "field": str, "start_date": str, "end_date": str}}
-- **work_experience**: {{"company": str, "position": str, "start_date": str, "end_date": str, "description": str}}
-- **projects**: {{"name": str, "description": str, "technologies": [str]}}
-- **certifications**: {{"name": str, "issuer": str, "date": str}}
-- **research_work**: {{"title": str, "venue": str, "date": str}}
-- **skills**: [str] (just add the skill name)
-- **misc**: {{}} (flexible dictionary)
+- **education**: {{"institution": str (required), "degree": str (required), "field": str (optional), "start_date": str (optional, YYYY-MM or YYYY), "end_date": str (optional, YYYY-MM or YYYY or "present"), "gpa": str (optional)}}
+- **work_experience**: {{"company": str (required), "position": str (required), "start_date": str (optional, YYYY-MM or YYYY), "end_date": str (optional, YYYY-MM or YYYY or "present"), "description": str (optional, SHORT BULLETED format)}}
+- **projects**: {{"name": str (required), "description": str (required, SHORT BULLETED format), "technologies": [str] (optional), "url": str (optional), "start_date": str (optional, YYYY-MM or YYYY), "end_date": str (optional, YYYY-MM or YYYY or "present")}}
+- **certifications**: {{"name": str (required), "issuer": str (optional), "date": str (optional, YYYY-MM or YYYY), "credential_id": str (optional), "url": str (optional)}}
+- **research_work**: {{"title": str (required), "venue": str (optional), "date": str (optional, YYYY-MM or YYYY), "description": str (optional, SHORT BULLETED format), "url": str (optional)}}
+- **skills**: [str] (array of skill names)
+- **misc**: {{}} (flexible dictionary for truly miscellaneous items)
 
 **Return a valid JSON object with this exact structure:**
 {{
@@ -434,7 +434,7 @@ Response:
 
 **Example 2 - Education:**
 Question: "Do you have a Bachelor's degree in Computer Science?"
-Answer: "Yes, from Stanford University, graduated in 2022"
+Answer: "Yes, from Stanford University, graduated in 2022 with 3.8 GPA"
 Response:
 {{
   "knowledge_graph_updates": {{
@@ -444,11 +444,32 @@ Response:
       "degree": "Bachelor's degree",
       "field": "Computer Science",
       "start_date": "",
-      "end_date": "2022"
+      "end_date": "2022",
+      "gpa": "3.8"
     }}
   }},
   "confidence": 0.9,
   "summary": "Added Bachelor's degree in Computer Science from Stanford University"
+}}
+
+**Example 3 - Project:**
+Question: "Do you have experience building web applications with Python?"
+Answer: "Yes, I built an AI-powered resume builder using FastAPI and React"
+Response:
+{{
+  "knowledge_graph_updates": {{
+    "category": "projects",
+    "data": {{
+      "name": "AI Resume Builder",
+      "description": "• Web application for generating tailored resumes using AI\\n• Built with FastAPI backend and React frontend",
+      "technologies": ["Python", "FastAPI", "React", "AI/ML"],
+      "url": "",
+      "start_date": "",
+      "end_date": ""
+    }}
+  }},
+  "confidence": 0.8,
+  "summary": "Added AI Resume Builder project with Python and FastAPI"
 }}
 
 IMPORTANT: Return ONLY the JSON object, no additional text or explanation.
@@ -516,14 +537,48 @@ You are an expert at organizing professional resume data into the correct catego
 **Task:**
 Analyze the knowledge graph and identify items that are in the wrong sections. Move them to the appropriate sections for better resume structuring.
 
-**Knowledge Graph Structure:**
-- **education**: Degrees, certifications from educational institutions (universities, colleges)
-- **work_experience**: Professional work history, job positions, company experience
-- **projects**: Personal or professional projects, portfolios
-- **skills**: Technical and soft skills (single words or short phrases like "Python", "Leadership")
-- **certifications**: Professional certifications, licenses (AWS, Azure, etc.)
-- **research_work**: Published papers, research projects, academic work
-- **misc**: Truly miscellaneous items that don't fit elsewhere
+**Knowledge Graph Structure and Schemas:**
+
+- **education**: Array of objects with schema:
+  - institution (required): University/college name
+  - degree (required): Degree type
+  - field (optional): Field of study
+  - start_date (optional): YYYY-MM or YYYY
+  - end_date (optional): YYYY-MM or YYYY or "present"
+  - gpa (optional): GPA or grade
+
+- **work_experience**: Array of objects with schema:
+  - company (required): Company name
+  - position (required): Job title
+  - start_date (optional): YYYY-MM or YYYY
+  - end_date (optional): YYYY-MM or YYYY or "present"
+  - description (optional): SHORT BULLETED responsibilities and achievements
+
+- **projects**: Array of objects with schema:
+  - name (required): Project name
+  - description (required): SHORT BULLETED project description
+  - technologies (optional): Array of technology names
+  - url (optional): Project URL or repository
+  - start_date (optional): YYYY-MM or YYYY
+  - end_date (optional): YYYY-MM or YYYY or "present"
+
+- **certifications**: Array of objects with schema:
+  - name (required): Certification name
+  - issuer (optional): Issuing organization
+  - date (optional): YYYY-MM or YYYY
+  - credential_id (optional): Credential ID
+  - url (optional): Verification URL
+
+- **research_work**: Array of objects with schema:
+  - title (required): Paper or research title
+  - venue (optional): Conference or journal
+  - date (optional): YYYY-MM or YYYY
+  - description (optional): SHORT BULLETED summary
+  - url (optional): Publication URL
+
+- **skills**: Array of strings (skill names only, e.g., ["Python", "Leadership"])
+
+- **misc**: Dictionary for truly miscellaneous items that don't fit elsewhere (languages spoken, hobbies, etc.)
 
 **Common Misplacements to Fix:**
 1. **misc items** that should be in work_experience (e.g., "FastAPI_experience: 5 years" → work_experience)
@@ -563,7 +618,13 @@ Analyze the knowledge graph and identify items that are in the wrong sections. M
 **Example:**
 Input misc: {{"FastAPI_experience": "5 years", "languages": ["English", "Spanish"]}}
 Output:
-- work_experience: [{{"position": "Backend Developer (FastAPI)", "description": "5 years of experience with FastAPI", "company": "", "start_date": "", "end_date": ""}}]
+- work_experience: [{{
+    "company": "",
+    "position": "Backend Developer (FastAPI)",
+    "start_date": "",
+    "end_date": "",
+    "description": "• 5 years of experience with FastAPI framework"
+  }}]
 - skills: add "FastAPI" if not already present
 - misc: {{"languages": ["English", "Spanish"]}}
 
@@ -601,6 +662,210 @@ IMPORTANT: Return ONLY the JSON object, no additional text or explanation. Prese
             }
         except Exception as e:
             logger.error(f"Error optimizing knowledge graph: {str(e)}")
+            raise
+
+    def parse_free_text_to_knowledge_graph(self, text: str) -> dict:
+        """
+        Parse free-form text into structured knowledge graph data.
+        Automatically detects the type of information and structures it according to the schema.
+
+        Args:
+            text: Free-form text describing a project, education, work experience, or other professional info
+
+        Returns:
+            Dictionary with:
+            - category: Which knowledge graph category this belongs to (education, work_experience, projects, etc.)
+            - data: Structured data following the category's schema
+            - confidence: Confidence score (0.0-1.0)
+        """
+        try:
+            logger.info("Parsing free-form text into structured knowledge graph data...")
+
+            # Build prompt for parsing
+            prompt = f"""
+You are an expert at parsing professional information from free-form text into structured resume data.
+
+**User Input:**
+{text}
+
+**Your Task:**
+1. Identify what type of information this is (project, education, work experience, certification, research work, skill, or misc)
+2. Extract ALL relevant information from the text
+3. Structure it according to the appropriate schema
+4. Return a JSON object with the category and structured data
+
+**Knowledge Graph Schemas:**
+
+**Education:**
+{{
+  "institution": "string (required)",
+  "degree": "string (required)",
+  "field": "string (optional)",
+  "start_date": "string (YYYY-MM or YYYY format, optional)",
+  "end_date": "string (YYYY-MM or YYYY or 'present', optional)",
+  "gpa": "string (optional)"
+}}
+
+**Work Experience:**
+{{
+  "company": "string (required)",
+  "position": "string (required)",
+  "start_date": "string (YYYY-MM or YYYY format, optional)",
+  "end_date": "string (YYYY-MM or YYYY or 'present', optional)",
+  "description": "string - SHORT, BULLETED format (optional)"
+}}
+
+**Projects:**
+{{
+  "name": "string (required)",
+  "description": "string - SHORT, BULLETED format (required)",
+  "technologies": ["array", "of", "strings"] (optional),
+  "url": "string (optional)",
+  "start_date": "string (YYYY-MM or YYYY format, optional)",
+  "end_date": "string (YYYY-MM or YYYY or 'present', optional)"
+}}
+
+**Certifications:**
+{{
+  "name": "string (required)",
+  "issuer": "string (optional)",
+  "date": "string (YYYY-MM or YYYY format, optional)",
+  "credential_id": "string (optional)",
+  "url": "string (optional)"
+}}
+
+**Research Work:**
+{{
+  "title": "string (required)",
+  "venue": "string (optional)",
+  "date": "string (YYYY-MM or YYYY format, optional)",
+  "description": "string - SHORT, BULLETED format (optional)",
+  "url": "string (optional)"
+}}
+
+**Skills:**
+If the input describes skills, extract ONLY the skill names as a simple array of strings.
+Example: ["Python", "FastAPI", "Docker", "Kubernetes"]
+
+**Important Guidelines:**
+1. **Descriptions MUST be SHORT and BULLETED** - Not long paragraphs
+2. Break down descriptions into bullet points with "•" or "-"
+3. Each bullet should be 1-2 lines maximum
+4. Focus on impact and quantifiable results when possible
+5. For projects: Include what it does, key features, and impact
+6. For work experience: Include responsibilities and achievements
+7. Extract ALL technologies/tools mentioned
+8. Use proper date formats (YYYY-MM or YYYY)
+9. If dates are unclear, leave them empty
+10. Set confidence based on how much information was provided
+
+**Return Format:**
+Return ONLY a valid JSON object with this structure:
+{{
+  "category": "projects" | "education" | "work_experience" | "certifications" | "research_work" | "skills" | "misc",
+  "data": {{...structured data according to schema above...}},
+  "confidence": 0.0-1.0,
+  "reasoning": "Brief explanation of categorization and extracted info"
+}}
+
+**Examples:**
+
+**Input:** "I have built a website that lets you build resumes using AI using python and fastapi"
+**Output:**
+{{
+  "category": "projects",
+  "data": {{
+    "name": "AI Resume Builder",
+    "description": "• Web application that generates tailored resumes using AI\\n• Allows users to input job descriptions and automatically creates customized resumes\\n• Built with Python backend and AI integration",
+    "technologies": ["Python", "FastAPI", "AI/ML"],
+    "url": "",
+    "start_date": "",
+    "end_date": ""
+  }},
+  "confidence": 0.8,
+  "reasoning": "Clearly describes a project with technical details. Extracted programming languages and framework."
+}}
+
+**Input:** "I worked at Google as a Software Engineer from 2020 to 2023, where I developed backend services for search infrastructure"
+**Output:**
+{{
+  "category": "work_experience",
+  "data": {{
+    "company": "Google",
+    "position": "Software Engineer",
+    "start_date": "2020",
+    "end_date": "2023",
+    "description": "• Developed backend services for search infrastructure\\n• Worked on scalable distributed systems\\n• Contributed to core search functionality"
+  }},
+  "confidence": 0.95,
+  "reasoning": "Contains clear company name, position, dates, and responsibilities."
+}}
+
+**Input:** "Bachelor of Science in Computer Science from Stanford University, graduated 2022 with 3.8 GPA"
+**Output:**
+{{
+  "category": "education",
+  "data": {{
+    "institution": "Stanford University",
+    "degree": "Bachelor of Science",
+    "field": "Computer Science",
+    "start_date": "",
+    "end_date": "2022",
+    "gpa": "3.8"
+  }},
+  "confidence": 0.95,
+  "reasoning": "Contains institution, degree, field, graduation year, and GPA."
+}}
+
+**Input:** "I know Python, JavaScript, Docker, Kubernetes, and AWS"
+**Output:**
+{{
+  "category": "skills",
+  "data": ["Python", "JavaScript", "Docker", "Kubernetes", "AWS"],
+  "confidence": 1.0,
+  "reasoning": "Explicit list of technical skills."
+}}
+
+IMPORTANT:
+- Return ONLY the JSON object, no additional text
+- Make descriptions SHORT and BULLETED
+- Extract ALL technologies mentioned
+- Use proper schema for each category
+- If unsure about category, use "misc" and structure as simple key-value
+"""
+
+            system_prompt = "You are a professional resume data parser. Always return valid JSON with structured data following the provided schemas. Keep descriptions concise and bulleted."
+
+            # Get response from LLM
+            response = self.run_prompt(prompt, system_prompt)
+
+            # Parse JSON response
+            import json
+            import re
+
+            # Try to extract JSON from response
+            json_match = re.search(r'\{[\s\S]*\}', response)
+            if json_match:
+                json_str = json_match.group(0)
+                result = json.loads(json_str)
+            else:
+                result = json.loads(response)
+
+            logger.info(f"Successfully parsed text into category: {result.get('category')}")
+            return result
+
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse JSON response: {str(e)}")
+            logger.error(f"Response was: {response}")
+            return {
+                "category": "misc",
+                "data": {"raw_text": text},
+                "confidence": 0.0,
+                "reasoning": "Failed to parse - storing as misc",
+                "error": "Failed to parse AI response"
+            }
+        except Exception as e:
+            logger.error(f"Error parsing free text: {str(e)}")
             raise
 
     def run_prompt(self, prompt: str, system_prompt: Optional[str] = None) -> str:

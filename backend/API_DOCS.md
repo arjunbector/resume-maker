@@ -1086,6 +1086,153 @@ The user's knowledge graph is automatically updated with the optimized structure
 
 ---
 
+#### Parse Free-Form Text to Knowledge Graph
+**POST** `/api/v1/ai/parse-text`
+
+Parse free-form text into structured knowledge graph data. The AI automatically detects the type of information (project, education, work experience, certification, research work, skills) and structures it according to the appropriate schema. The parsed data is then added to the authenticated user's knowledge graph.
+
+**Authentication Required:**
+- Cookie: `access_token` OR
+- Header: `Authorization: Bearer {token}`
+
+**Request Body:**
+```json
+{
+  "text": "string (required)"
+}
+```
+
+**Example Requests:**
+
+**Example 1: Project Description**
+```json
+{
+  "text": "I have built a website that lets you build resumes using AI using python and fastapi"
+}
+```
+
+**Example 2: Work Experience**
+```json
+{
+  "text": "I worked at Google as a Software Engineer from 2020 to 2023, where I developed backend services for search infrastructure and worked with Python and Go"
+}
+```
+
+**Example 3: Education**
+```json
+{
+  "text": "Bachelor of Science in Computer Science from Stanford University, graduated 2022 with 3.8 GPA"
+}
+```
+
+**Example 4: Skills**
+```json
+{
+  "text": "I know Python, JavaScript, Docker, Kubernetes, and AWS"
+}
+```
+
+**Response:**
+```json
+{
+  "message": "Successfully parsed text and added to {category}",
+  "user_id": "string",
+  "email": "string",
+  "category": "projects",
+  "data": {
+    "name": "AI Resume Builder",
+    "description": "• Web application that generates tailored resumes using AI\n• Allows users to input job descriptions and automatically creates customized resumes\n• Built with Python backend and AI integration",
+    "technologies": ["Python", "FastAPI", "AI/ML"],
+    "url": "",
+    "start_date": "",
+    "end_date": ""
+  },
+  "confidence": 0.8,
+  "reasoning": "Clearly describes a project with technical details. Extracted programming languages and framework.",
+  "knowledge_graph_updated": true
+}
+```
+
+**Knowledge Graph Schemas:**
+
+The endpoint uses the following schemas for different categories:
+
+1. **Education:**
+   - `institution` (string, required): University or college name
+   - `degree` (string, required): Degree type (e.g., "Bachelor of Science")
+   - `field` (string, optional): Field of study
+   - `start_date` (string, optional): YYYY-MM or YYYY format
+   - `end_date` (string, optional): YYYY-MM or YYYY or "present"
+   - `gpa` (string, optional): GPA or grade
+
+2. **Work Experience:**
+   - `company` (string, required): Company name
+   - `position` (string, required): Job title
+   - `start_date` (string, optional): YYYY-MM or YYYY format
+   - `end_date` (string, optional): YYYY-MM or YYYY or "present"
+   - `description` (string, optional): SHORT, BULLETED responsibilities and achievements
+
+3. **Projects:**
+   - `name` (string, required): Project name
+   - `description` (string, required): SHORT, BULLETED project description
+   - `technologies` (array, optional): List of technologies used
+   - `url` (string, optional): Project URL or repository
+   - `start_date` (string, optional): YYYY-MM or YYYY format
+   - `end_date` (string, optional): YYYY-MM or YYYY or "present"
+
+4. **Certifications:**
+   - `name` (string, required): Certification name
+   - `issuer` (string, optional): Issuing organization
+   - `date` (string, optional): YYYY-MM or YYYY format
+   - `credential_id` (string, optional): Credential ID
+   - `url` (string, optional): Verification URL
+
+5. **Research Work:**
+   - `title` (string, required): Paper or research title
+   - `venue` (string, optional): Conference or journal name
+   - `date` (string, optional): YYYY-MM or YYYY format
+   - `description` (string, optional): SHORT, BULLETED summary
+   - `url` (string, optional): Publication URL
+
+6. **Skills:**
+   - Array of skill names (e.g., `["Python", "FastAPI", "Docker"]`)
+
+**Important Notes:**
+- Descriptions are automatically formatted as SHORT, BULLETED points
+- Each bullet point is 1-2 lines maximum
+- Technologies and tools mentioned in text are extracted automatically
+- Dates are formatted as YYYY-MM or YYYY
+- The AI determines the best category based on content
+- Confidence score (0.0-1.0) indicates parsing quality
+- For skills, duplicates are automatically avoided
+- Data is immediately added to user's knowledge graph
+
+**Response Fields:**
+- `message`: Success message
+- `user_id`: User's ID
+- `email`: User's email
+- `category`: Detected category (projects, education, work_experience, etc.)
+- `data`: Structured data according to category schema
+- `confidence`: AI confidence score (0.0-1.0)
+- `reasoning`: Explanation of categorization and extraction
+- `knowledge_graph_updated`: Whether data was added to knowledge graph
+
+**Use Cases:**
+1. **Quick Data Entry**: Users can describe their experience in natural language
+2. **Bulk Import**: Parse resumes or profiles from other formats
+3. **Voice Input**: Convert voice-to-text descriptions into structured data
+4. **Mobile-Friendly**: Easier than filling complex forms
+5. **Smart Extraction**: AI extracts technologies, dates, and other metadata automatically
+
+**Status Codes:**
+- `200` - Text parsed and added to knowledge graph successfully
+- `400` - Text input is empty or invalid
+- `401` - Not authenticated or invalid token
+- `404` - User not found
+- `500` - Server error or AI parsing failed
+
+---
+
 ### Sessions
 
 #### Create Session

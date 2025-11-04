@@ -25,7 +25,11 @@ class AnalyzeJobRequest(BaseModel):
 
 class MultiAnswerRequest(BaseModel):
     session_id: str
-    answers: Dict[str, str] 
+    answers: Dict[str, str]
+
+
+class ParseTextRequest(BaseModel):
+    text: str 
 
 
 @router.post("/custom")
@@ -615,4 +619,155 @@ def optimize_knowledge_graph(
         raise HTTPException(
             status_code=500,
             detail=f"Failed to optimize knowledge graph: {str(e)}"
+        )
+
+
+@router.post("/parse-text")
+def parse_text_to_knowledge_graph(
+    request: ParseTextRequest,
+    app_request: Request,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Parse free-form text into structured knowledge graph data.
+    Automatically detects the type of information (project, education, work experience, etc.)
+    and structures it according to the appropriate schema.
+
+    The endpoint will:
+    1. Analyze the input text using AI
+    2. Determine the category (projects, education, work_experience, certifications, research_work, skills, misc)
+    3. Extract and structure the data according to the category's schema
+    4. Add the structured data to the user's knowledge graph
+
+    **Schemas:**
+    - **Education**: institution, degree, field, start_date, end_date, gpa
+    - **Work Experience**: company, position, start_date, end_date, description (SHORT, BULLETED)
+    - **Projects**: name, description (SHORT, BULLETED), technologies[], url, start_date, end_date
+    - **Certifications**: name, issuer, date, credential_id, url
+    - **Research Work**: title, venue, date, description (SHORT, BULLETED), url
+    - **Skills**: Array of skill names (e.g., ["Python", "FastAPI", "Docker"])
+
+    **Important Notes:**
+    - Descriptions are automatically formatted as SHORT, BULLETED points
+    - Technologies/tools are extracted and listed
+    - Dates are formatted as YYYY-MM or YYYY
+    - The AI determines the best category based on content
+
+    **Example Inputs:**
+    - "I have built a website that lets you build resumes using AI using python and fastapi"
+    - "I worked at Google as a Software Engineer from 2020 to 2023"
+    - "Bachelor of Science in Computer Science from Stanford University, graduated 2022 with 3.8 GPA"
+    - "I know Python, JavaScript, Docker, Kubernetes, and AWS"
+
+    Returns:
+        - category: Which knowledge graph section the data belongs to
+        - data: Structured data following the appropriate schema
+        - confidence: AI confidence score (0.0-1.0)
+        - reasoning: Explanation of categorization
+        - knowledge_graph_updated: Whether the data was added to user's knowledge graph
+    """
+    try:
+        user_id = current_user['user_id']
+        email = current_user['email']
+
+        logger.info(f"Parsing free-form text for user {email}")
+        logger.info(f"Text length: {len(request.text)} characters")
+
+        # Validate input
+        if not request.text or len(request.text.strip()) == 0:
+            raise HTTPException(
+                status_code=400,
+                detail="Text input is required and cannot be empty"
+            )
+
+        # Get agent from app state
+        agent = app_request.app.state.agent
+
+        # Parse the free-form text
+        parse_result = agent.parse_free_text_to_knowledge_graph(request.text)
+
+        # Check for parsing errors
+        if "error" in parse_result:
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to parse text with AI"
+            )
+
+        category = parse_result.get('category')
+        data = parse_result.get('data')
+        confidence = parse_result.get('confidence', 0.0)
+        reasoning = parse_result.get('reasoning', '')
+
+        logger.info(f"Parsed text into category: {category} with confidence: {confidence}")
+
+        # Get current user data
+        user = UserOperations.get_user_by_id(user_id)
+        knowledge_graph = user.get('knowledge_graph', {})
+
+        # Add parsed data to appropriate knowledge graph category
+        knowledge_graph_updated = False
+
+        if category == "skills":
+            # Skills is an array of strings
+            current_skills = knowledge_graph.get('skills', [])
+            if isinstance(data, list):
+                # Add new skills, avoiding duplicates
+                for skill in data:
+                    if skill not in current_skills:
+                        current_skills.append(skill)
+                        knowledge_graph_updated = True
+                knowledge_graph['skills'] = current_skills
+
+        elif category in ["education", "work_experience", "projects", "certifications", "research_work"]:
+            # These are arrays of objects
+            current_items = knowledge_graph.get(category, [])
+            if not isinstance(current_items, list):
+                current_items = []
+
+            # Add the new item
+            current_items.append(data)
+            knowledge_graph[category] = current_items
+            knowledge_graph_updated = True
+
+        elif category == "misc":
+            # Misc is a dictionary
+            current_misc = knowledge_graph.get('misc', {})
+            if isinstance(data, dict):
+                current_misc.update(data)
+            else:
+                # If data is not a dict, store it with a generated key
+                import time
+                key = f"item_{int(time.time())}"
+                current_misc[key] = data
+            knowledge_graph['misc'] = current_misc
+            knowledge_graph_updated = True
+
+        # Update user's knowledge graph
+        if knowledge_graph_updated:
+            update_operations = {
+                "knowledge_graph": knowledge_graph
+            }
+            UserOperations.update_user(email, update_operations)
+            logger.info(f"Knowledge graph updated with new {category} data")
+
+        return {
+            "message": f"Successfully parsed text and added to {category}",
+            "user_id": user_id,
+            "email": email,
+            "category": category,
+            "data": data,
+            "confidence": confidence,
+            "reasoning": reasoning,
+            "knowledge_graph_updated": knowledge_graph_updated
+        }
+
+    except HTTPException:
+        raise
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error parsing text: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to parse text: {str(e)}"
         )
