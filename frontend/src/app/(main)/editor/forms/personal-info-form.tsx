@@ -19,22 +19,24 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
 // Function to parse URL and extract platform name
-function parseSocialMediaUrl(url: string): { platform: string; url: string } | null {
+function parseSocialMediaUrl(
+  url: string
+): { platform: string; url: string } | null {
   if (!url || url.trim() === "") return null;
-  
+
   // Normalize URL (add https:// if missing)
   let normalizedUrl = url.trim();
   if (!normalizedUrl.match(/^https?:\/\//i)) {
     normalizedUrl = `https://${normalizedUrl}`;
   }
-  
+
   try {
     const urlObj = new URL(normalizedUrl);
     const hostname = urlObj.hostname.toLowerCase();
-    
+
     // Remove www. prefix if present
     const cleanHostname = hostname.replace(/^www\./, "");
-    
+
     // Extract platform name from common social media domains
     const platformMap: Record<string, string> = {
       "instagram.com": "instagram",
@@ -51,9 +53,9 @@ function parseSocialMediaUrl(url: string): { platform: string; url: string } | n
       "medium.com": "medium",
       "behance.net": "behance",
       "dribbble.com": "dribbble",
-      "portfolio": "portfolio",
+      portfolio: "portfolio",
     };
-    
+
     // Try to match domain
     for (const [domain, platform] of Object.entries(platformMap)) {
       if (cleanHostname.includes(domain)) {
@@ -63,13 +65,14 @@ function parseSocialMediaUrl(url: string): { platform: string; url: string } | n
         };
       }
     }
-    
+
     // If no match, use the domain name as platform
     const domainParts = cleanHostname.split(".");
-    const platform = domainParts.length > 1 
-      ? domainParts[domainParts.length - 2] 
-      : cleanHostname;
-    
+    const platform =
+      domainParts.length > 1
+        ? domainParts[domainParts.length - 2]
+        : cleanHostname;
+
     return {
       platform,
       url: normalizedUrl.replace(/^https?:\/\//, ""),
@@ -88,7 +91,7 @@ export default function PersonalInfoForm({
   setResumeData,
 }: EditorFormProps) {
   const [socialMediaInput, setSocialMediaInput] = useState("");
-  
+
   const form = useForm<PersonalInfoValues>({
     resolver: zodResolver(personalInfoSchema),
     defaultValues: {
@@ -101,33 +104,34 @@ export default function PersonalInfoForm({
     },
   });
   const router = useRouter();
-  
+
   const socialMediaHandles = form.watch("socialMediaHandles") || {};
-  
+
   const addSocialMedia = () => {
     if (!socialMediaInput.trim()) return;
-    
+
     const parsed = parseSocialMediaUrl(socialMediaInput);
     if (!parsed) {
       toast.error("Invalid URL");
       return;
     }
-    
+
     const currentHandles = form.getValues("socialMediaHandles") || {};
     form.setValue("socialMediaHandles", {
       ...currentHandles,
       [parsed.platform]: parsed.url,
     });
-    
+
     setSocialMediaInput("");
   };
-  
+
   const removeSocialMedia = (platform: string) => {
     const currentHandles = form.getValues("socialMediaHandles") || {};
     const updated = { ...currentHandles };
     delete updated[platform];
     form.setValue("socialMediaHandles", updated);
   };
+  const searchParams = useSearchParams();
 
   const { mutate, isPending } = useMutation({
     mutationFn: async (values: PersonalInfoValues) => {
@@ -153,7 +157,9 @@ export default function PersonalInfoForm({
     },
     onSuccess: () => {
       toast.success("Personal info saved successfully");
-      router.push("/editor?step=job-description");
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.set("step", "job-description");
+      router.push(`/editor?${newSearchParams.toString()}`);
     },
     onError: () => {
       toast.error("Failed to save personal info");
@@ -259,7 +265,7 @@ export default function PersonalInfoForm({
                 </FormItem>
               )}
             />
-            
+
             <div className="space-y-3">
               <FormLabel>Social Media Handles (Optional)</FormLabel>
               <div className="flex gap-2">
@@ -282,7 +288,7 @@ export default function PersonalInfoForm({
                   Add
                 </Button>
               </div>
-              
+
               {Object.keys(socialMediaHandles).length > 0 && (
                 <div className="space-y-2">
                   {Object.entries(socialMediaHandles).map(([platform, url]) => (
@@ -291,8 +297,12 @@ export default function PersonalInfoForm({
                       className="flex items-center justify-between rounded-md border p-2"
                     >
                       <div className="flex-1">
-                        <span className="font-medium capitalize">{platform}:</span>{" "}
-                        <span className="text-sm text-muted-foreground">{url}</span>
+                        <span className="font-medium capitalize">
+                          {platform}:
+                        </span>{" "}
+                        <span className="text-sm text-muted-foreground">
+                          {url}
+                        </span>
                       </div>
                       <Button
                         type="button"
@@ -308,7 +318,7 @@ export default function PersonalInfoForm({
                 </div>
               )}
             </div>
-            
+
             <div className="flex justify-end">
               <LoadingButton type="submit" loading={isPending}>
                 Next

@@ -58,7 +58,9 @@ export default function GeneralInfoForm({
     },
     onSuccess: () => {
       toast.success("General info saved successfully");
-      router.push("/editor?step=personal-info");
+      const newSearchParams = new URLSearchParams(searchparams);
+      newSearchParams.set("step", "personal-info");
+      router.push(`/editor?${newSearchParams.toString()}`);
     },
     onError: () => {
       toast.error("Failed to save general info");
