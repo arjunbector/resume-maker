@@ -485,28 +485,27 @@ Set/replace items in different categories of the user's knowledge graph. This en
 **Response:**
 ```json
 {
-  "message": "Items added to knowledge graph successfully",
+  "message": "Knowledge graph items set successfully",
   "user_id": "550e8400-e29b-41d4-a716-446655440000",
   "email": "user@example.com",
-  "added_items": {
+  "set_items": {
     "education": 1,
     "work_experience": 1,
     "projects": 1,
     "certifications": 1,
     "skills": 3
   },
-  "total_items_added": 7
+  "total_items_set": 7
 }
 ```
 
 **Response Fields:**
-- `added_items`: Breakdown of how many items were added to each category
-- `total_items_added`: Total number of items added across all categories
-- For skills: shows count of new skills (duplicates not counted)
+- `set_items`: Breakdown of how many items were set in each category
+- `total_items_set`: Total number of items set across all categories
 
 **Status Codes:**
-- `200` - Items added successfully
-- `400` - No items provided to add
+- `200` - Items set successfully
+- `400` - No items provided to set
 - `401` - Not authenticated or invalid token
 - `404` - User not found
 - `500` - Server error
@@ -1620,6 +1619,159 @@ Get complete, structured resume data for a session. Combines user profile and se
 - `401` - Not authenticated or invalid token
 - `403` - Session does not belong to authenticated user
 - `404` - Session not found
+- `500` - Server error
+
+---
+
+#### Get All Resume Data
+**GET** `/api/v1/sessions/user/all/resume-data`
+
+Get complete, structured resume data for ALL sessions of the authenticated user. Returns an array of resume data objects, one for each session, with the same structure as the single session endpoint.
+
+**Authentication Required:**
+- Cookie: `access_token` OR
+- Header: `Authorization: Bearer {token}`
+
+**Request Parameters:**
+None (uses authentication to identify user)
+
+**Response:**
+```json
+{
+  "user_id": "550e8400-e29b-41d4-a716-446655440000",
+  "total_sessions": 3,
+  "resume_data": [
+    {
+      "session_id": "550e8400-e29b-41d4-a716-446655440000",
+      "personal_info": {
+        "name": "John Doe",
+        "email": "john.doe@example.com",
+        "phone": "+1-555-0123",
+        "address": "123 Main St, San Francisco, CA",
+        "current_job_title": "Senior Software Engineer",
+        "socials": {
+          "linkedin": "https://linkedin.com/in/johndoe",
+          "github": "https://github.com/johndoe"
+        }
+      },
+      "professional_profile": {
+        "education": [...],
+        "work_experience": [...],
+        "projects": [...],
+        "skills": [...],
+        "certifications": [...],
+        "research_work": [...],
+        "misc": {}
+      },
+      "target_job": {
+        "job_role": "Senior Backend Engineer",
+        "company_name": "Tech Corp",
+        "company_url": "https://techcorp.com/jobs/123",
+        "job_description": "...",
+        "parsed_requirements": [...],
+        "extracted_keywords": [...]
+      },
+      "resume_metadata": {
+        "resume_name": "Tech Corp Backend Engineer Resume",
+        "resume_description": "Tailored for Senior Backend Engineer at Tech Corp",
+        "session_id": "550e8400-e29b-41d4-a716-446655440000",
+        "created_at": "2025-11-02T10:00:00",
+        "last_active": "2025-11-02T12:00:00"
+      },
+      "analysis": {
+        "stage": "ready_for_resume",
+        "missing_fields": [],
+        "required_fields": [...],
+        "ai_context": {...},
+        "last_action": "requirements_compared"
+      },
+      "questionnaire": {
+        "questions": [],
+        "completion": 100.0
+      }
+    },
+    {
+      "session_id": "660e8400-e29b-41d4-a716-446655440001",
+      "personal_info": { /* Same as above */ },
+      "professional_profile": { /* Same as above */ },
+      "target_job": {
+        "job_role": "Lead Engineer",
+        "company_name": "Startup Inc",
+        "company_url": "https://startup.com/careers",
+        "job_description": "...",
+        "parsed_requirements": [...],
+        "extracted_keywords": [...]
+      },
+      "resume_metadata": {
+        "resume_name": "Startup Lead Engineer Resume",
+        "resume_description": "Tailored for Lead Engineer at Startup Inc",
+        "session_id": "660e8400-e29b-41d4-a716-446655440001",
+        "created_at": "2025-11-01T08:00:00",
+        "last_active": "2025-11-01T15:00:00"
+      },
+      "analysis": { /* Session-specific */ },
+      "questionnaire": { /* Session-specific */ }
+    }
+    // ... more sessions
+  ]
+}
+```
+
+**Response Structure:**
+- `user_id`: The authenticated user's ID
+- `total_sessions`: Total number of sessions found
+- `resume_data`: Array of resume data objects (one per session)
+
+**Each resume data object contains:**
+
+0. **session_id**: Session identifier at top level for easy access (unique per session)
+
+1. **personal_info**: Contact information (same across all sessions)
+   - Name, email, phone, address, current job title
+   - Social links (LinkedIn, GitHub, etc.)
+
+2. **professional_profile**: Knowledge graph (same across all sessions)
+   - Education, work experience, projects, skills
+   - Certifications, research work, misc information
+
+3. **target_job**: Job-specific information (unique per session)
+   - Role, company, job description
+   - AI-parsed requirements and keywords
+
+4. **resume_metadata**: Session information (unique per session)
+   - Resume name and description
+   - Session ID (also included here for consistency)
+   - Timestamps (created_at, last_active)
+
+5. **analysis**: AI analysis results (unique per session)
+   - Current workflow stage
+   - Missing and required fields
+   - AI context and suggestions
+
+6. **questionnaire**: Questions and answers (unique per session)
+   - All questions with user answers
+   - Completion percentage
+
+**Notes:**
+- Each resume data object has `session_id` at the top level for easy access
+- Session ID is also included in `resume_metadata` for consistency with single session endpoint
+- Sessions are sorted by `last_active` (most recent first)
+- Personal info and professional profile are the same across all sessions
+- Target job, metadata, analysis, and questionnaire are unique per session
+- If user has no sessions, returns empty array with `total_sessions: 0`
+- This is efficient as it fetches user data once and reuses it for all sessions
+
+**Use Cases:**
+- Display all resumes/sessions in a dashboard
+- Compare different resume versions
+- Batch generate multiple resumes
+- Export all resume data at once
+- Show resume progress across different job applications
+
+**Status Codes:**
+- `200` - Resume data retrieved successfully (even if no sessions exist)
+- `401` - Not authenticated or invalid token
+- `404` - User not found
 - `500` - Server error
 
 ---

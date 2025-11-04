@@ -67,8 +67,8 @@ The application follows a modular FastAPI architecture with clear separation of 
 
 **API Routers** ([app/routers/](app/routers/))
 - `auth.py` - Authentication endpoints (signup, login, logout, me at `/api/v1/auth`)
-- `users.py` - User management endpoints (GET/PUT at `/api/v1/users`, POST `/knowledge-graph/add`)
-- `sessions.py` - Session management (POST/PUT/GET at `/api/v1/sessions`, GET `/resume-data` for complete resume data)
+- `users.py` - User management endpoints (GET/PUT at `/api/v1/users`, POST `/knowledge-graph/add` to set/replace knowledge graph data)
+- `sessions.py` - Session management (POST/PUT/GET at `/api/v1/sessions`, GET `/{session_id}/resume-data` for single session resume data, GET `/user/all/resume-data` for all sessions resume data)
 - `ai.py` - AI endpoints (analyze, compare, generate-questionnaire, answer-question, optimize-knowledge-graph, parse-text at `/api/v1/ai`)
 
 **AI Module** ([app/ai/](app/ai/))
