@@ -980,6 +980,112 @@ The endpoint automatically updates:
 
 ---
 
+#### Optimize Knowledge Graph
+**POST** `/api/v1/ai/optimize-knowledge-graph`
+
+Analyze and automatically restructure the user's knowledge graph using AI. Identifies misplaced items and moves them to appropriate sections for better resume organization.
+
+**Authentication Required:**
+- Cookie: `access_token` OR
+- Header: `Authorization: Bearer {token}`
+
+**Request Body:**
+None (uses authenticated user's knowledge graph)
+
+**What This Endpoint Does:**
+Uses AI to identify and fix common knowledge graph organization issues:
+1. **Misc to Work Experience**: Moves items like `"FastAPI_experience": "5 years"` to work_experience
+2. **Misc to Skills**: Extracts skill names from verbose descriptions
+3. **Misc to Certifications**: Moves certifications to proper section
+4. **Misc to Projects**: Moves project descriptions to projects section
+5. **Skill Extraction**: Converts detailed descriptions into proper skill entries
+
+**Example Input (Before Optimization):**
+```json
+{
+  "education": [],
+  "work_experience": [],
+  "projects": [],
+  "skills": ["Python", "Rust", "C"],
+  "certifications": [],
+  "research_work": [],
+  "misc": {
+    "FastAPI_experience": "5 years",
+    "AWS_cert": "Solutions Architect 2023",
+    "languages": ["English", "Spanish"]
+  }
+}
+```
+
+**Example Output (After Optimization):**
+```json
+{
+  "message": "Knowledge graph optimized successfully",
+  "user_id": "user-uuid-here",
+  "email": "user@example.com",
+  "changes_made": [
+    "Moved 'FastAPI_experience: 5 years' from misc to work_experience",
+    "Moved 'AWS_cert' from misc to certifications",
+    "Added 'FastAPI' to skills"
+  ],
+  "total_changes": 3,
+  "suggestions": [
+    "Consider adding company name and dates for FastAPI work experience",
+    "Add credential ID for AWS certification if available"
+  ],
+  "optimized_graph": {
+    "education": [],
+    "work_experience": [
+      {
+        "position": "Backend Developer (FastAPI)",
+        "company": "",
+        "start_date": "",
+        "end_date": "",
+        "description": "5 years of experience with FastAPI"
+      }
+    ],
+    "projects": [],
+    "skills": ["Python", "Rust", "C", "FastAPI"],
+    "certifications": [
+      {
+        "name": "AWS Solutions Architect",
+        "issuer": "Amazon Web Services",
+        "date": "2023"
+      }
+    ],
+    "research_work": [],
+    "misc": {
+      "languages": ["English", "Spanish"]
+    }
+  }
+}
+```
+
+**Response Fields:**
+- `message`: Success message or indication that no changes were needed
+- `changes_made`: Array of human-readable descriptions of changes
+- `total_changes`: Number of changes made
+- `suggestions`: AI suggestions for further improving the knowledge graph
+- `optimized_graph`: The complete restructured knowledge graph
+
+**Automatic Update:**
+The user's knowledge graph is automatically updated with the optimized structure if changes are made.
+
+**When to Use:**
+- After bulk importing data that may be unstructured
+- When misc section has grown too large
+- Before generating a resume to ensure proper categorization
+- Periodically to maintain clean data structure
+
+**Status Codes:**
+- `200` - Knowledge graph optimized successfully
+- `400` - Knowledge graph is empty (add data first)
+- `401` - Not authenticated or invalid token
+- `404` - User not found
+- `500` - Server error or AI optimization failed
+
+---
+
 ### Sessions
 
 #### Create Session

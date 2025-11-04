@@ -547,3 +547,84 @@ def answer_question(
             status_code=500,
             detail=f"Failed to submit answer: {str(e)}"
         )
+
+
+@router.post("/optimize")
+def optimize_knowledge_graph(
+    app_request: Request,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Analyze and optimize the user's knowledge graph structure.
+
+    This endpoint uses AI to identify misplaced items in the knowledge graph
+    and move them to appropriate sections. For example:
+    - "FastAPI_experience: 5 years" in misc → work_experience
+    - Verbose skill descriptions → proper skills array
+    - Certifications in misc → certifications section
+
+    The user's knowledge graph is automatically updated with the optimized structure.
+    """
+    try:
+        user_id = current_user['user_id']
+        email = current_user['email']
+        logger.info(f"Optimizing knowledge graph for user: {email}")
+
+        # Get current user data
+        user = UserOperations.get_user_by_id(user_id)
+        current_kg = user.get('knowledge_graph', {})
+
+        # Check if knowledge graph is empty
+        if not current_kg or all(not v for v in current_kg.values()):
+            raise HTTPException(
+                status_code=400,
+                detail="Knowledge graph is empty. Add some data first using /api/v1/users/knowledge-graph/add"
+            )
+
+        # Get the agent from app state
+        agent: ResumeAgent = app_request.app.state.agent
+
+        # Optimize the knowledge graph
+        optimization_result = agent.optimize_knowledge_graph(current_kg)
+
+        if "error" in optimization_result:
+            logger.warning(f"AI optimization failed: {optimization_result['error']}")
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to optimize knowledge graph with AI"
+            )
+
+        restructured_graph = optimization_result.get('restructured_graph', {})
+        changes_made = optimization_result.get('changes_made', [])
+        suggestions = optimization_result.get('suggestions', [])
+
+        # Update user's knowledge graph with optimized structure
+        if changes_made:
+            update_operations = {
+                "knowledge_graph": restructured_graph
+            }
+            UserOperations.update_user(email, update_operations)
+            logger.info(f"Knowledge graph updated with {len(changes_made)} changes")
+        else:
+            logger.info("No changes needed - knowledge graph is already well-structured")
+
+        return {
+            "message": "Knowledge graph optimized successfully" if changes_made else "Knowledge graph is already well-structured",
+            "user_id": user_id,
+            "email": email,
+            "changes_made": changes_made,
+            "total_changes": len(changes_made),
+            "suggestions": suggestions,
+            "optimized_graph": restructured_graph
+        }
+
+    except HTTPException:
+        raise
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error optimizing knowledge graph: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to optimize knowledge graph: {str(e)}"
+        )

@@ -164,6 +164,7 @@ The main AI agent for resume generation and analysis:
 - `compare_and_find_missing_fields(parsed_requirements, user_knowledge_graph)` - Identify gaps in user profile
 - `generate_questionnaire(missing_fields)` - Create short, targeted questions for missing information
 - `process_answer(question, answer, related_field, field_type)` - Extract structured data from user answers
+- `optimize_knowledge_graph(knowledge_graph)` - Restructure knowledge graph by moving misplaced items to proper sections
 - Automatic model initialization based on provider string
 - Built on LiteLLMModel for flexible provider support
 
