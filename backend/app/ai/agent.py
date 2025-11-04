@@ -490,6 +490,119 @@ IMPORTANT: Return ONLY the JSON object, no additional text or explanation.
             logger.error(f"Error processing answer: {str(e)}")
             raise
 
+    def optimize_knowledge_graph(self, knowledge_graph: dict) -> dict:
+        """
+        Analyze the knowledge graph and restructure misplaced items into proper sections.
+
+        Args:
+            knowledge_graph: The user's knowledge graph with potentially misplaced items
+
+        Returns:
+            Dictionary with:
+            - restructured_graph: Optimized knowledge graph with items in proper sections
+            - changes_made: List of changes that were made
+            - suggestions: Additional suggestions for the user
+        """
+        try:
+            logger.info("Optimizing knowledge graph structure...")
+
+            # Build prompt for knowledge graph optimization
+            prompt = f"""
+You are an expert at organizing professional resume data into the correct categories.
+
+**Current Knowledge Graph:**
+{knowledge_graph}
+
+**Task:**
+Analyze the knowledge graph and identify items that are in the wrong sections. Move them to the appropriate sections for better resume structuring.
+
+**Knowledge Graph Structure:**
+- **education**: Degrees, certifications from educational institutions (universities, colleges)
+- **work_experience**: Professional work history, job positions, company experience
+- **projects**: Personal or professional projects, portfolios
+- **skills**: Technical and soft skills (single words or short phrases like "Python", "Leadership")
+- **certifications**: Professional certifications, licenses (AWS, Azure, etc.)
+- **research_work**: Published papers, research projects, academic work
+- **misc**: Truly miscellaneous items that don't fit elsewhere
+
+**Common Misplacements to Fix:**
+1. **misc items** that should be in work_experience (e.g., "FastAPI_experience: 5 years" → work_experience)
+2. **misc items** that should be in skills (e.g., "Python_skills: advanced" → skills: ["Python"])
+3. **skills** that are too detailed and should be in work_experience (e.g., "5 years Python backend development")
+4. **certifications** in misc that should be in certifications section
+5. **projects** in misc that should be in projects section
+
+**Guidelines:**
+1. Extract work experience details from misc and create proper work_experience entries
+2. Extract skill names from verbose descriptions
+3. Move certifications to proper section with name, issuer, date
+4. Keep misc only for truly miscellaneous information (languages spoken, hobbies, etc.)
+5. Preserve all original information - don't lose any data
+6. If misc has "X_experience: Y years", create a work_experience entry or note it in description
+
+**Return a valid JSON object with this exact structure:**
+{{
+  "restructured_graph": {{
+    "education": [...],
+    "work_experience": [...],
+    "projects": [...],
+    "skills": [...],
+    "certifications": [...],
+    "research_work": [...],
+    "misc": {{}}
+  }},
+  "changes_made": [
+    "Moved 'FastAPI_experience: 5 years' from misc to work_experience",
+    "Extracted 'Python' skill from detailed description"
+  ],
+  "suggestions": [
+    "Consider adding more details about FastAPI work experience (company, dates, responsibilities)"
+  ]
+}}
+
+**Example:**
+Input misc: {{"FastAPI_experience": "5 years", "languages": ["English", "Spanish"]}}
+Output:
+- work_experience: [{{"position": "Backend Developer (FastAPI)", "description": "5 years of experience with FastAPI", "company": "", "start_date": "", "end_date": ""}}]
+- skills: add "FastAPI" if not already present
+- misc: {{"languages": ["English", "Spanish"]}}
+
+IMPORTANT: Return ONLY the JSON object, no additional text or explanation. Preserve ALL data from the original knowledge graph.
+"""
+
+            system_prompt = "You are a professional resume data organizer. Always return valid JSON responses and preserve all user data."
+
+            # Get response from LLM
+            response = self.run_prompt(prompt, system_prompt)
+
+            # Parse JSON response
+            import json
+            import re
+
+            # Try to extract JSON from response
+            json_match = re.search(r'\{[\s\S]*\}', response)
+            if json_match:
+                json_str = json_match.group(0)
+                result = json.loads(json_str)
+            else:
+                result = json.loads(response)
+
+            logger.info(f"Knowledge graph optimization complete. Made {len(result.get('changes_made', []))} changes")
+            return result
+
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse JSON response: {str(e)}")
+            logger.error(f"Response was: {response}")
+            return {
+                "restructured_graph": knowledge_graph,
+                "changes_made": [],
+                "suggestions": [],
+                "error": "Failed to parse AI response"
+            }
+        except Exception as e:
+            logger.error(f"Error optimizing knowledge graph: {str(e)}")
+            raise
+
     def run_prompt(self, prompt: str, system_prompt: Optional[str] = None) -> str:
         """
         Run an arbitrary prompt through the LLM and return the response.

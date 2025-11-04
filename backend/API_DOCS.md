@@ -980,6 +980,112 @@ The endpoint automatically updates:
 
 ---
 
+#### Optimize Knowledge Graph
+**POST** `/api/v1/ai/optimize-knowledge-graph`
+
+Analyze and automatically restructure the user's knowledge graph using AI. Identifies misplaced items and moves them to appropriate sections for better resume organization.
+
+**Authentication Required:**
+- Cookie: `access_token` OR
+- Header: `Authorization: Bearer {token}`
+
+**Request Body:**
+None (uses authenticated user's knowledge graph)
+
+**What This Endpoint Does:**
+Uses AI to identify and fix common knowledge graph organization issues:
+1. **Misc to Work Experience**: Moves items like `"FastAPI_experience": "5 years"` to work_experience
+2. **Misc to Skills**: Extracts skill names from verbose descriptions
+3. **Misc to Certifications**: Moves certifications to proper section
+4. **Misc to Projects**: Moves project descriptions to projects section
+5. **Skill Extraction**: Converts detailed descriptions into proper skill entries
+
+**Example Input (Before Optimization):**
+```json
+{
+  "education": [],
+  "work_experience": [],
+  "projects": [],
+  "skills": ["Python", "Rust", "C"],
+  "certifications": [],
+  "research_work": [],
+  "misc": {
+    "FastAPI_experience": "5 years",
+    "AWS_cert": "Solutions Architect 2023",
+    "languages": ["English", "Spanish"]
+  }
+}
+```
+
+**Example Output (After Optimization):**
+```json
+{
+  "message": "Knowledge graph optimized successfully",
+  "user_id": "user-uuid-here",
+  "email": "user@example.com",
+  "changes_made": [
+    "Moved 'FastAPI_experience: 5 years' from misc to work_experience",
+    "Moved 'AWS_cert' from misc to certifications",
+    "Added 'FastAPI' to skills"
+  ],
+  "total_changes": 3,
+  "suggestions": [
+    "Consider adding company name and dates for FastAPI work experience",
+    "Add credential ID for AWS certification if available"
+  ],
+  "optimized_graph": {
+    "education": [],
+    "work_experience": [
+      {
+        "position": "Backend Developer (FastAPI)",
+        "company": "",
+        "start_date": "",
+        "end_date": "",
+        "description": "5 years of experience with FastAPI"
+      }
+    ],
+    "projects": [],
+    "skills": ["Python", "Rust", "C", "FastAPI"],
+    "certifications": [
+      {
+        "name": "AWS Solutions Architect",
+        "issuer": "Amazon Web Services",
+        "date": "2023"
+      }
+    ],
+    "research_work": [],
+    "misc": {
+      "languages": ["English", "Spanish"]
+    }
+  }
+}
+```
+
+**Response Fields:**
+- `message`: Success message or indication that no changes were needed
+- `changes_made`: Array of human-readable descriptions of changes
+- `total_changes`: Number of changes made
+- `suggestions`: AI suggestions for further improving the knowledge graph
+- `optimized_graph`: The complete restructured knowledge graph
+
+**Automatic Update:**
+The user's knowledge graph is automatically updated with the optimized structure if changes are made.
+
+**When to Use:**
+- After bulk importing data that may be unstructured
+- When misc section has grown too large
+- Before generating a resume to ensure proper categorization
+- Periodically to maintain clean data structure
+
+**Status Codes:**
+- `200` - Knowledge graph optimized successfully
+- `400` - Knowledge graph is empty (add data first)
+- `401` - Not authenticated or invalid token
+- `404` - User not found
+- `500` - Server error or AI optimization failed
+
+---
+
 ### Sessions
 
 #### Create Session
@@ -1207,6 +1313,165 @@ Update session fields by session_id.
 
 **Status Codes:**
 - `200` - Session updated successfully
+- `404` - Session not found
+- `500` - Server error
+
+---
+
+#### Get Resume Data
+**GET** `/api/v1/sessions/{session_id}/resume-data`
+
+Get complete, structured resume data for a session. Combines user profile and session data into a single response ready for resume generation.
+
+**Authentication Required:**
+- Cookie: `access_token` OR
+- Header: `Authorization: Bearer {token}`
+
+**Path Parameters:**
+- `session_id` (required) - Session ID
+
+**Response:**
+```json
+{
+  "personal_info": {
+    "name": "John Doe",
+    "email": "john.doe@gmail.com",
+    "phone": "+1234567890",
+    "address": "San Francisco, CA",
+    "current_job_title": "Senior Software Engineer",
+    "socials": {
+      "linkedin": "https://linkedin.com/in/johndoe",
+      "github": "https://github.com/johndoe"
+    }
+  },
+  "professional_profile": {
+    "education": [
+      {
+        "institution": "Stanford University",
+        "degree": "Bachelor of Science",
+        "field": "Computer Science",
+        "start_date": "2018-09",
+        "end_date": "2022-06"
+      }
+    ],
+    "work_experience": [
+      {
+        "company": "Google",
+        "position": "Software Engineer",
+        "start_date": "2022-07",
+        "end_date": "present",
+        "description": "Backend development with Python and Go"
+      }
+    ],
+    "projects": [
+      {
+        "name": "Resume Builder",
+        "description": "AI-powered resume builder",
+        "technologies": ["Python", "FastAPI", "MongoDB", "React"]
+      }
+    ],
+    "skills": ["Python", "FastAPI", "MongoDB", "React", "Docker"],
+    "certifications": [
+      {
+        "name": "AWS Certified Solutions Architect",
+        "issuer": "Amazon Web Services",
+        "date": "2023-05"
+      }
+    ],
+    "research_work": [],
+    "misc": {}
+  },
+  "target_job": {
+    "job_role": "Senior Backend Engineer",
+    "company_name": "Tech Corp",
+    "company_url": "https://techcorp.com/jobs/123",
+    "job_description": "We are looking for...",
+    "parsed_requirements": [
+      {
+        "name": "Python",
+        "type": "skill",
+        "description": "5+ years experience",
+        "priority": 5,
+        "confidence": 0.95
+      }
+    ],
+    "extracted_keywords": ["Python", "FastAPI", "MongoDB"]
+  },
+  "resume_metadata": {
+    "resume_name": "Tech Corp Backend Engineer Resume",
+    "resume_description": "Tailored for Senior Backend Engineer at Tech Corp",
+    "session_id": "550e8400-e29b-41d4-a716-446655440000",
+    "created_at": "2025-11-02T10:00:00",
+    "last_active": "2025-11-02T12:00:00"
+  },
+  "analysis": {
+    "stage": "ready_for_resume",
+    "missing_fields": [],
+    "required_fields": [
+      {
+        "name": "Python",
+        "type": "skill",
+        "priority": 5,
+        "confidence": 0.95
+      }
+    ],
+    "ai_context": {
+      "summary": "Compared job requirements with user profile",
+      "total_missing": 0,
+      "total_matched": 10
+    },
+    "last_action": "requirements_compared"
+  },
+  "questionnaire": {
+    "questions": [],
+    "completion": 100.0
+  }
+}
+```
+
+**What This Endpoint Returns:**
+
+1. **personal_info**: Contact information and current job title
+   - Uses `resume_email` if set, otherwise falls back to account email
+   - Includes all social links (LinkedIn, GitHub, etc.)
+
+2. **professional_profile**: Complete knowledge graph
+   - Education history
+   - Work experience
+   - Projects
+   - Skills
+   - Certifications
+   - Research work
+   - Miscellaneous information
+
+3. **target_job**: Job-specific information
+   - Role and company details
+   - AI-parsed requirements
+   - Extracted keywords from job description
+
+4. **resume_metadata**: Session information
+   - Resume name and description
+   - Session ID and timestamps
+
+5. **analysis**: AI analysis results
+   - Current workflow stage
+   - Missing and required fields
+   - AI context and suggestions
+
+6. **questionnaire**: Questions and answers
+   - All questions with answers
+   - Completion percentage
+
+**Use Cases:**
+- Generate resume PDF/document
+- Display resume preview
+- Check if all required data is available
+- Frontend form population
+
+**Status Codes:**
+- `200` - Resume data retrieved successfully
+- `401` - Not authenticated or invalid token
+- `403` - Session does not belong to authenticated user
 - `404` - Session not found
 - `500` - Server error
 
