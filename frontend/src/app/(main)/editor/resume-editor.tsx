@@ -9,6 +9,7 @@ import BreadCrumbs from "./bread-crumbs";
 import Footer from "./footer";
 import { ResumeValues } from "@/lib/validations";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { transformApiResponseToResumeData } from "@/lib/transformers";
 
 // interface ResumeEditorProps {
 //   resumeToEdit: ResumeServerData | null;
@@ -62,7 +63,7 @@ export default function ResumeEditor() {
         throw new Error("Failed to fetch resume data");
       }
       const data = await res.json();
-      return data as ResumeValues;
+      return transformApiResponseToResumeData(data);
     },
     enabled: !!searchParams.get("resumeId"),
   });
@@ -86,6 +87,14 @@ export default function ResumeEditor() {
     jobDescriptionFile: undefined as unknown as File | undefined,
     // Questionnaire
     questions: [],
+    // Education
+    educations: [],
+    // Projects
+    projects: [],
+    // Research Papers
+    researchPapers: [],
+    // Skills
+    skills: [],
   });
   console.log(resumeData);
   const [showSmResumePreview, setShowSmResumePreview] = useState(false);
@@ -97,6 +106,18 @@ export default function ResumeEditor() {
       mutation.mutate();
     }
   }, []); // Empty dependency array to run only once on mount
+
+  // Update resumeData when query data is available
+  useEffect(() => {
+    if (query.data) {
+      console.log("📊 API data received:", query.data);
+      setResumeData(query.data);
+    }
+  }, [query.data]);
+
+  // Don't render forms until data is loaded (for existing resumes)
+  const isLoadingExistingResume = resumeId && query.isLoading;
+  const shouldShowForms = !isLoadingExistingResume;
 
   const currentStep = searchParams.get("step") || steps[0].key;
   function setStep(key: string) {
@@ -127,7 +148,11 @@ export default function ResumeEditor() {
             )}
           >
             <BreadCrumbs currentStep={currentStep} setCurrentStep={setStep} />
-            {FormComponent ? (
+            {isLoadingExistingResume ? (
+              <div className="flex justify-center items-center h-64">
+                <div className="text-muted-foreground">Loading resume data...</div>
+              </div>
+            ) : FormComponent ? (
               <FormComponent
                 resumeData={resumeData}
                 setResumeData={setResumeData}

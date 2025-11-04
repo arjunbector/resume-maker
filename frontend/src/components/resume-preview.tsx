@@ -38,9 +38,10 @@ export default function ResumePreview({
         <PersonalInfoHeader resumeData={resumeData} />
         {/* <SummarySection resumeData={resumeData} /> */}
         {/* <WorkExxperienceSection resumeData={resumeData} /> */}
-        <ProjectsSection resumeData={resumeData} />
         <EducationSection resumeData={resumeData} />
-        {/* <SkillsSection resumeData={resumeData} /> */}
+        <ProjectsSection resumeData={resumeData} />
+        <ResearchSection resumeData={resumeData} />
+        <SkillsSection resumeData={resumeData} />
       </div>
     </div>
   );
@@ -248,40 +249,79 @@ function ProjectsSection({ resumeData }: ResumePreviewProps) {
   );
 }
 
-// function SkillsSection({ resumeData }: ResumePreviewProps) {
-//   const { skills, colorHex, borderStyle } = resumeData;
-//   if (!skills?.length) return null;
-//   return (
-//     <>
-//       <hr
-//         className="border-2"
-//         style={{
-//           borderColor: colorHex,
-//         }}
-//       />
-//       <div className="break-inside-avoid space-y-3">
-//         <p className="text-lg font-semibold">Skills</p>
-//         <div className="flex flex-wrap gap-2">
-//           {skills.map((skill, idx) => (
-//             <Badge
-//               style={{
-//                 backgroundColor: colorHex,
+function ResearchSection({ resumeData }: ResumePreviewProps) {
+  const { researchPapers, colorHex } = resumeData;
+  const researchNotEmpty = researchPapers?.filter(
+    (paper: any) => Object.values(paper).filter(Boolean).length > 0
+  );
+  if (!researchNotEmpty?.length) return null;
+  return (
+    <>
+      <hr
+        className="border-2"
+        style={{
+          borderColor: colorHex,
+        }}
+      />
+      <div className="space-y-3">
+        <p
+          className="text-lg font-semibold"
+          style={{
+            color: colorHex,
+          }}
+        >
+          Research Publications
+        </p>
+        {researchNotEmpty.map((paper: any, idx: number) => (
+          <div key={idx} className="break-after-avoid space-y-1">
+            <div className="flex items-center justify-between text-sm font-semibold">
+              <span>
+                {paper.url ? (
+                  <Link target="_blank" href={paper.url}>
+                    {paper.title}
+                  </Link>
+                ) : (
+                  paper.title
+                )}
+              </span>
+              {paper.date && <span className="text-xs">{paper.date}</span>}
+            </div>
+            {paper.venue && (
+              <p className="text-xs font-medium italic">{paper.venue}</p>
+            )}
+            {paper.description && (
+              <div className="text-xs whitespace-pre-line">
+                {paper.description}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
 
-//                 borderRadius:
-//                   borderStyle === BORDER_STYLES.SQUARE
-//                     ? "0px"
-//                     : borderStyle === BORDER_STYLES.CIRCLE
-//                     ? "9999px"
-//                     : "8px",
-//               }}
-//               key={idx}
-//               className="rounded-md bg-black text-white"
-//             >
-//               {skill}
-//             </Badge>
-//           ))}
-//         </div>
-//       </div>
-//     </>
-//   );
-// }
+function SkillsSection({ resumeData }: ResumePreviewProps) {
+  const { skills, colorHex, borderStyle } = resumeData;
+  if (!skills?.length) return null;
+  return (
+    <>
+      <hr
+        className="border-2"
+        style={{
+          borderColor: colorHex,
+        }}
+      />
+      <div className="break-inside-avoid space-y-3">
+        <p className="text-lg font-semibold">Skills</p>
+        <div className="flex flex-wrap gap-2">
+          {skills.map((skill: any, idx: number) => (
+            <Badge key={idx} className="rounded-md bg-black text-white">
+              {skill}
+            </Badge>
+          ))}
+        </div>
+      </div>
+    </>
+  );
+}

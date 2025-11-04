@@ -166,6 +166,18 @@ export default function PersonalInfoForm({
     },
   });
 
+  // Reset form when resumeData changes
+  useEffect(() => {
+    form.reset({
+      name: resumeData.name || "",
+      jobTitle: resumeData.jobTitle || "",
+      address: resumeData.address || "",
+      phone: resumeData.phone || "",
+      email: resumeData.email || "",
+      socialMediaHandles: resumeData.socialMediaHandles || {},
+    });
+  }, [resumeData.name, resumeData.jobTitle, resumeData.address, resumeData.phone, resumeData.email, resumeData.socialMediaHandles, form]);
+
   useEffect(() => {
     const subscription = form.watch((values) => {
       if (form.formState.isValid) {

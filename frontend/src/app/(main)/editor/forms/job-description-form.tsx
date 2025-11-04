@@ -138,6 +138,17 @@ export default function JobDescriptionForm({
     },
   });
 
+  // Reset form when resumeData changes
+  useEffect(() => {
+    form.reset({
+      applyingJobTitle: resumeData.applyingJobTitle || "",
+      companyName: resumeData.companyName || "",
+      companyWebsite: resumeData.companyWebsite || "",
+      jobDescriptionString: resumeData.jobDescriptionString || "",
+      jobDescriptionFile: resumeData.jobDescriptionFile,
+    });
+  }, [resumeData.applyingJobTitle, resumeData.companyName, resumeData.companyWebsite, resumeData.jobDescriptionString, resumeData.jobDescriptionFile, form]);
+
   useEffect(() => {
     const subscription = form.watch((values) => {
       if (form.formState.isValid) {

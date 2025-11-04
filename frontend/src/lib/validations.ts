@@ -20,7 +20,9 @@ export interface ResumeValues
     JobDescriptionValues,
     QuestionAnswerValues,
     EducationValues,
-    ProjectsValues { }
+    ProjectsValues,
+    SkillsValues,
+    ResearchValues { }
 
 
 
@@ -98,3 +100,27 @@ export const projectsSchema = z.object({
 });
 
 export type ProjectsValues = z.infer<typeof projectsSchema>;
+
+// Research
+export const researchSchema = z.object({
+    researchPapers: z
+        .array(
+            z.object({
+                title: optionalString,
+                venue: optionalString,
+                date: optionalString, // YYYY-MM or YYYY format
+                description: optionalString,
+                url: optionalString,
+            })
+        )
+        .optional(),
+});
+
+export type ResearchValues = z.infer<typeof researchSchema>;
+
+export const skillsSchema = z.object({
+    skills: z
+        .array(z.string().trim())
+        .optional(),
+});
+export type SkillsValues = z.infer<typeof skillsSchema>;

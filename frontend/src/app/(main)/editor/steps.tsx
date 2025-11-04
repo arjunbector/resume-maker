@@ -1,13 +1,13 @@
-// import { EditorFormProps } from "@/lib/types";
 import { EditorFormProps } from "@/lib/types";
 import React from "react";
+import EducationalForm from "./education-form";
 import GeneralInfoForm from "./forms/general-info-form";
 import JobDescriptionForm from "./forms/job-description-form";
+import Optimize from "./forms/optimize";
 import PersonalInfoForm from "./forms/personal-info-form";
 import QuestionnaireForm from "./forms/questionnaire-form";
-import Optimize from "./forms/optimize";
-import EducationalForm from "./education-form";
 import ProjectsForm from "./projects-form";
+import SkillsForm from "./skills";
 
 export const steps: {
   title: string;
@@ -44,21 +44,26 @@ export const steps: {
   //     component: WorkExperienceForm,
   //     key: "work-experience",
   //   },
-    {
-      title: "Education",
-      component: EducationalForm,
-      key: "education",
-    },
-    {
-      title: "Projects",
-      component: ProjectsForm,
-      key: "projects",
-    },
-  //   {
-  //     title: "Skills",
-  //     component: SkillsForm,
-  //     key: "skills",
-  //   },
+  {
+    title: "Education",
+    component: EducationalForm,
+    key: "education",
+  },
+  {
+    title: "Projects",
+    component: ProjectsForm,
+    key: "projects",
+  },
+  // {
+  //   title: "Research Work",
+  //   component: ResearchForm,
+  //   key: "research-work",
+  // },
+  {
+    title: "Skills",
+    component: SkillsForm,
+    key: "skills",
+  },
   //   {
   //     title: "Summary",
   //     component: SummaryForm,

@@ -1,43 +1,44 @@
 import { Button } from "@/components/ui/button";
 import {
-    Form,
-    FormControl,
-    FormDescription,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { EditorFormProps } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { projectsSchema, ProjectsValues } from "@/lib/validations";
 import {
-    projectsSchema,
-    ProjectsValues
-} from "@/lib/validations";
-import {
-    closestCenter,
-    DndContext,
-    DragEndEvent,
-    KeyboardSensor,
-    PointerSensor,
-    useSensor,
-    useSensors,
+  closestCenter,
+  DndContext,
+  DragEndEvent,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
 } from "@dnd-kit/core";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import {
-    arrayMove,
-    SortableContext,
-    sortableKeyboardCoordinates,
-    useSortable,
-    verticalListSortingStrategy,
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation } from "@tanstack/react-query";
 import { GripHorizontalIcon } from "lucide-react";
 import { useEffect } from "react";
 import { useFieldArray, useForm, UseFormReturn } from "react-hook-form";
+import LoadingButton from "@/components/ui/loading-button";
+import { toast } from "sonner";
+import { useRouter, useSearchParams } from "next/navigation";
 export default function ProjectsForm({
   resumeData,
   setResumeData,
@@ -48,6 +49,13 @@ export default function ProjectsForm({
       projects: resumeData.projects || [],
     },
   });
+  // Reset form when resumeData changes
+  useEffect(() => {
+    form.reset({
+      projects: resumeData.projects || [],
+    });
+  }, [resumeData.projects, form]);
+
   useEffect(() => {
     // Create a subscription to watch form changes
     const subscription = form.watch((values) => {
@@ -60,7 +68,7 @@ export default function ProjectsForm({
           ...values,
           projects: values.projects?.filter(
             (project): project is NonNullable<typeof project> =>
-              project !== undefined,
+              project !== undefined
           ),
         });
       }
@@ -79,7 +87,7 @@ export default function ProjectsForm({
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
-    }),
+    })
   );
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -91,6 +99,50 @@ export default function ProjectsForm({
       return arrayMove(fields, oldIndex, newIndex);
     }
   };
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const { mutate, isPending } = useMutation({
+    mutationFn: async (data: ProjectsValues) => {
+      // Transform frontend format to backend format
+      const transformedProjects = data.projects?.map((project) => ({
+        name: project.title || "",
+        description: project.description || "",
+        technologies: [], // You might want to add a technologies field to the form
+        url: project.link || "",
+        start_date: project.startDate || "",
+        end_date: project.endDate || "",
+      })) || [];
+
+      const payload = {
+        projects: transformedProjects,
+      };
+
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/users/knowledge-graph/add`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+      if (!res.ok) {
+        throw new Error("Failed to save projects info");
+      }
+    },
+    onSuccess: () => {
+      toast.success("Projects saved successfully");
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.set("step", "research-work");
+      router.push(`/editor?${newSearchParams.toString()}`);
+    },
+    onError: () => {
+      toast.error("Failed to save projects");
+    },
+  });
 
   return (
     <div className="mx-auto max-w-xl space-y-6">
@@ -99,7 +151,10 @@ export default function ProjectsForm({
         <p className="text-muted-foreground text-sm">Add your projects here.</p>
       </div>
       <Form {...form}>
-        <form className="space-y-3">
+        <form 
+          className="space-y-3"
+          onSubmit={form.handleSubmit((values) => mutate(values))}
+        >
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
@@ -137,6 +192,11 @@ export default function ProjectsForm({
               Add Project
             </Button>
           </div>
+          <div className="flex justify-end">
+            <LoadingButton type="submit" loading={isPending}>
+              Next
+            </LoadingButton>
+          </div>
         </form>
       </Form>
     </div>
@@ -162,7 +222,7 @@ function ProjectsItem({ form, index, remove, id }: ProjectsItemProps) {
     <div
       className={cn(
         "bg-background space-y-3 rounded-md border p-3",
-        isDragging && "relative z-100 cursor-grab shadow-xl",
+        isDragging && "relative z-100 cursor-grab shadow-xl"
       )}
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}

@@ -66,6 +66,15 @@ export default function GeneralInfoForm({
       toast.error("Failed to save general info");
     },
   });
+  // Reset form when resumeData changes
+  useEffect(() => {
+    console.log("🔄 General Info Form - resumeData changed:", { title: resumeData.title, description: resumeData.description });
+    form.reset({
+      title: resumeData.title || "",
+      description: resumeData.description || "",
+    });
+  }, [resumeData.title, resumeData.description, form]);
+
   useEffect(() => {
     const subscription = form.watch((values) => {
       if (form.formState.isValid) {

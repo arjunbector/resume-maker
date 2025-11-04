@@ -9,11 +9,9 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import LoadingButton from "@/components/ui/loading-button";
 import { EditorFormProps } from "@/lib/types";
-import {
-  educationSchema,
-  EducationValues
-} from "@/lib/validations";
+import { educationSchema, EducationValues } from "@/lib/validations";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { GripHorizontalIcon } from "lucide-react";
 import { useEffect } from "react";
@@ -38,6 +36,9 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export default function EducationalForm({
   resumeData,
@@ -49,9 +50,15 @@ export default function EducationalForm({
       educations: resumeData.educations || [],
     },
   });
+  // Reset form when resumeData changes
+  useEffect(() => {
+    form.reset({
+      educations: resumeData.educations || [],
+    });
+  }, [resumeData.educations, form]);
+
   // Fixed useEffect for Education Form
   useEffect(() => {
-    console.log(resumeData)
     // Create a subscription to watch form changes
     const subscription = form.watch((values) => {
       const { isValid } = form.formState;
@@ -63,7 +70,7 @@ export default function EducationalForm({
           ...values,
           educations: values.educations?.filter(
             (education): education is NonNullable<typeof education> =>
-              education !== undefined,
+              education !== undefined
           ),
         });
       }
@@ -82,9 +89,10 @@ export default function EducationalForm({
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
-    }),
+    })
   );
-
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (over && active.id != over.id) {
@@ -95,6 +103,51 @@ export default function EducationalForm({
     }
   };
 
+  const queryClient = useQueryClient();
+
+  const { mutate, isPending } = useMutation({
+    mutationFn: async (data: EducationValues) => {
+      // Transform frontend format to backend format
+      const transformedEducation =
+        data.educations?.map((edu) => ({
+          institution: edu.school || "",
+          degree: edu.degree || "",
+          field: "", // You might want to extract this from degree or add a separate field
+          start_date: edu.startDate || "",
+          end_date: edu.endDate || "",
+          gpa: edu.marks || "",
+        })) || [];
+
+      const payload = {
+        education: transformedEducation,
+      };
+
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/users/knowledge-graph/add`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+      if (!res.ok) {
+        throw new Error("Failed to save education info");
+      }
+    },
+    onSuccess: () => {
+      toast.success("Education info saved successfully");
+      // const newSearchParams = new URLSearchParams(searchParams);
+      // newSearchParams.set("step", "projects");
+      // router.push(`/editor?${newSearchParams.toString()}`);
+      queryClient.invalidateQueries({
+        queryKey: ["resumeData", searchParams.get("resumeId")],
+      });
+    },
+  });
+
   return (
     <div className="mx-auto max-w-xl space-y-6">
       <div className="space-y-1.5 text-center">
@@ -104,7 +157,10 @@ export default function EducationalForm({
         </p>
       </div>
       <Form {...form}>
-        <form className="space-y-3">
+        <form
+          className="space-y-3"
+          onSubmit={form.handleSubmit((values) => mutate(values))}
+        >
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
@@ -142,6 +198,11 @@ export default function EducationalForm({
               Add education
             </Button>
           </div>
+          <div className="flex justify-end">
+            <LoadingButton type="submit" loading={isPending}>
+              Next
+            </LoadingButton>
+          </div>
         </form>
       </Form>
     </div>
@@ -168,7 +229,7 @@ function EducationItem({ form, index, remove, id }: EducationItemProps) {
     <div
       className={cn(
         "bg-background space-y-3 rounded-md border p-3",
-        isDragging && "relative z-100 cursor-grab shadow-xl",
+        isDragging && "relative z-100 cursor-grab shadow-xl"
       )}
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
