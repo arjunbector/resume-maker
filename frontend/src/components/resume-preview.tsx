@@ -52,22 +52,17 @@ interface ResumeSectionProps {
 
 function PersonalInfoHeader({ resumeData }: ResumeSectionProps) {
   console.log("resume me values =", resumeData);
-  const { firstName, lastName, jobTitle, city, country, phone, email } =
-    resumeData;
+  const { name, jobTitle, address, phone, email } = resumeData;
 
   return (
     <div className="flex items-center gap-6">
       <div className="space-y-2.5">
         <div className="space-y-1">
-          <p className="text-3xl font-bold">
-            {firstName} {lastName}
-          </p>
+          <p className="text-3xl font-bold">{name}</p>
           <p className="font-medium">{jobTitle}</p>
           <p className="text-xs text-gray-500">
-            {city}
-            {city && country ? ", " : ""}
-            {country}
-            {(city || country) && (phone || email) ? " • " : ""}
+            {address}
+            {(address) && (phone || email) ? " • " : ""}
             {[phone, email].filter(Boolean).join(" • ")}
           </p>
         </div>

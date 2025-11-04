@@ -9,11 +9,15 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import LoadingButton from "@/components/ui/loading-button";
 import { EditorFormProps } from "@/lib/types";
 import { GeneralInfoValues, genereInfoSchema } from "@/lib/validations";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation } from "@tanstack/react-query";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 
 export default function GeneralInfoForm({
   resumeData,
@@ -22,12 +26,44 @@ export default function GeneralInfoForm({
   const form = useForm<GeneralInfoValues>({
     resolver: zodResolver(genereInfoSchema),
     defaultValues: {
-      title: resumeData.generalInfo.title || "",
-      description: resumeData.generalInfo.description || "",
+      title: resumeData.title || "",
+      description: resumeData.description || "",
     },
     mode: "onChange", // Enable validation on change
   });
-
+  const router = useRouter();
+  const searchparams = useSearchParams();
+  const session_id = searchparams.get("resumeId");
+  const { mutate, isPending } = useMutation({
+    mutationFn: async (values: GeneralInfoValues) => {
+      const data = {
+        resume_name: values.title,
+        resume_description: values.description,
+      };
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/sessions?session_id=${session_id}`,
+        {
+          method: "PUT",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(data),
+        }
+      );
+      if (response.status != 200) {
+        throw new Error("Something went wrong");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      toast.success("General info saved successfully");
+      router.push("/editor?step=personal-info");
+    },
+    onError: () => {
+      toast.error("Failed to save general info");
+    },
+  });
   useEffect(() => {
     const subscription = form.watch((values) => {
       if (form.formState.isValid) {
@@ -50,7 +86,10 @@ export default function GeneralInfoForm({
         </p>
       </div>
       <Form {...form}>
-        <form className="space-y-3">
+        <form
+          className="space-y-3"
+          onSubmit={form.handleSubmit((values) => mutate(values))}
+        >
           <FormField
             control={form.control}
             name="title"
@@ -81,6 +120,9 @@ export default function GeneralInfoForm({
             )}
           />
           <div className="flex justify-end">
+            <LoadingButton type="submit" loading={isPending}>
+              Next
+            </LoadingButton>
             <Button
               className="cursor-pointer"
               type="reset"

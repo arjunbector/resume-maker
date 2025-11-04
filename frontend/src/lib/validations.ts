@@ -30,6 +30,7 @@ export const personalInfoSchema = z.object({
     address: optionalString,
     phone: optionalString,
     email: optionalString,
+    socialMediaHandles: z.record(z.string(), z.string()).optional(),
 });
 
 export type PersonalInfoValues = z.infer<typeof personalInfoSchema>;
