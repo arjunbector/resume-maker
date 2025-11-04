@@ -174,3 +174,112 @@ def get_resume_data(session_id: str, current_user: dict = Depends(get_current_us
     except Exception as e:
         logger.error(f"Error retrieving resume data: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to retrieve resume data: {str(e)}")
+
+
+@router.get("/user/all/resume-data")
+def get_all_resume_data(current_user: dict = Depends(get_current_user)):
+    """
+    Get complete resume data for ALL sessions of the authenticated user.
+
+    Returns an array of resume data objects, one for each session. Each object contains:
+    - Personal information (name, contact details)
+    - Professional profile (education, experience, skills, projects, certifications)
+    - Target job information (role, company, requirements)
+    - Resume metadata (name, description, session_id)
+    - Analysis status (stage, missing fields)
+    - Questionnaire data
+
+    Sessions are sorted by last_active (most recent first).
+    """
+    try:
+        user_id = current_user['user_id']
+        logger.info(f"Retrieving resume data for all sessions of user {user_id}")
+
+        # Get all user sessions
+        sessions = SessionOperations.get_user_sessions(user_id)
+
+        # Get user data once (same for all sessions)
+        user = UserOperations.get_user_by_id(user_id)
+        user.pop('hashed_password', None)
+
+        # Build resume data for each session
+        all_resume_data = []
+
+        for session in sessions.get('sessions', []):
+            resume_data = {
+                # Session ID at top level for easy access
+                "session_id": session.get('session_id', ''),
+
+                # Personal Information (same across all sessions)
+                "personal_info": {
+                    "name": user.get('name', ''),
+                    "email": user.get('resume_email', '') or user.get('email', ''),
+                    "phone": user.get('phone', ''),
+                    "address": user.get('address', ''),
+                    "current_job_title": user.get('current_job_title', ''),
+                    "socials": user.get('socials', {})
+                },
+
+                # Professional Profile (same across all sessions)
+                "professional_profile": {
+                    "education": user.get('knowledge_graph', {}).get('education', []),
+                    "work_experience": user.get('knowledge_graph', {}).get('work_experience', []),
+                    "projects": user.get('knowledge_graph', {}).get('projects', []),
+                    "skills": user.get('knowledge_graph', {}).get('skills', []),
+                    "certifications": user.get('knowledge_graph', {}).get('certifications', []),
+                    "research_work": user.get('knowledge_graph', {}).get('research_work', []),
+                    "misc": user.get('knowledge_graph', {}).get('misc', {})
+                },
+
+                # Target Job Information (unique per session)
+                "target_job": {
+                    "job_role": session.get('job_details', {}).get('job_role', ''),
+                    "company_name": session.get('job_details', {}).get('company_name', ''),
+                    "company_url": session.get('job_details', {}).get('company_url', ''),
+                    "job_description": session.get('job_details', {}).get('job_description', ''),
+                    "parsed_requirements": session.get('job_details', {}).get('parsed_requirements', []),
+                    "extracted_keywords": session.get('job_details', {}).get('extracted_keywords', [])
+                },
+
+                # Resume Metadata (unique per session)
+                "resume_metadata": {
+                    "resume_name": session.get('resume_name', ''),
+                    "resume_description": session.get('resume_description', ''),
+                    "session_id": session.get('session_id', ''),
+                    "created_at": session.get('created_at'),
+                    "last_active": session.get('last_active')
+                },
+
+                # Analysis & Status (unique per session)
+                "analysis": {
+                    "stage": session.get('resume_state', {}).get('stage', 'init'),
+                    "missing_fields": session.get('resume_state', {}).get('missing_fields', []),
+                    "required_fields": session.get('resume_state', {}).get('required_fields', []),
+                    "ai_context": session.get('resume_state', {}).get('ai_context', {}),
+                    "last_action": session.get('resume_state', {}).get('last_action', '')
+                },
+
+                # Questionnaire (unique per session)
+                "questionnaire": {
+                    "questions": session.get('questionnaire', {}).get('questions', []),
+                    "completion": session.get('questionnaire', {}).get('completion', 0.0)
+                }
+            }
+
+            all_resume_data.append(resume_data)
+
+        logger.info(f"Retrieved resume data for {len(all_resume_data)} sessions")
+
+        return {
+            "user_id": user_id,
+            "total_sessions": len(all_resume_data),
+            "resume_data": all_resume_data
+        }
+
+    except HTTPException:
+        raise
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error retrieving all resume data: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve all resume data: {str(e)}")
