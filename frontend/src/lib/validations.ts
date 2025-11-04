@@ -1,6 +1,13 @@
-import { z } from "zod";
+import { email, z } from "zod";
 
 export const optionalString = z.string().trim().optional().or(z.literal(""));
+
+export const authSchema = z.object({
+    email: z.string().email(),
+    password: z.string().min(6, "Password must be at least 6 characters long"),
+})
+
+export type AuthValues = z.infer<typeof authSchema>;
 
 export const genereInfoSchema = z.object({
     title: optionalString,
@@ -18,11 +25,9 @@ export interface ResumeValues
 export type GeneralInfoValues = z.infer<typeof genereInfoSchema>;
 
 export const personalInfoSchema = z.object({
-    firstName: optionalString,
-    lastName: optionalString,
+    name: optionalString,
     jobTitle: optionalString,
-    city: optionalString,
-    country: optionalString,
+    address: optionalString,
     phone: optionalString,
     email: optionalString,
 });
