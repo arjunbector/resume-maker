@@ -326,10 +326,10 @@ Update current authenticated user's profile. Uses authentication (cookie or Auth
 
 ---
 
-#### Add to Knowledge Graph
+#### Set Knowledge Graph Data
 **POST** `/api/v1/users/knowledge-graph/add`
 
-Add one or multiple items to different categories of the user's knowledge graph.
+Set/replace items in different categories of the user's knowledge graph. This endpoint directly sets the provided data, replacing existing data in those categories.
 
 **Authentication Required:**
 - Cookie: `access_token` OR
@@ -448,20 +448,20 @@ Add one or multiple items to different categories of the user's knowledge graph.
 
 **Notes:**
 - All fields are optional - you can update one or multiple categories
-- Items are **appended** to existing data (not replaced)
-- For skills: duplicates are automatically avoided
-- For misc: dictionary values are merged with existing misc data
-- You can add a single item or multiple items to each category
+- Items are **SET directly**, replacing existing data in those categories
+- Only the categories provided in the request will be updated
+- Categories not included in the request will remain unchanged
+- To add items to existing data, fetch current data first, merge it, then set the complete array
 - The schemas above are recommended but flexible - you can include additional fields as needed
 
-**Example - Adding only skills:**
+**Example - Setting only skills:**
 ```json
 {
   "skills": ["React", "Node.js", "TypeScript"]
 }
 ```
 
-**Example - Adding multiple categories:**
+**Example - Setting multiple categories:**
 ```json
 {
   "projects": [

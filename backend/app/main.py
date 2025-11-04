@@ -2,12 +2,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from loguru import logger
-from database.models import JobQuestionsRequest
 from database.client import mongodb
 from services.pipeline import JobQuestionsPipeline
 from ai.agent import ResumeAgent
-from utils.prompt import generate_prompt
-from utils.questions import parse_questions
 from routers import users, sessions, auth, ai
 import uvicorn
 

@@ -59,10 +59,10 @@ def add_to_knowledge_graph(
     current_user: dict = Depends(get_current_user)
 ):
     """
-    Add items to the user's knowledge graph.
+    Set/replace items in the user's knowledge graph.
 
-    This endpoint allows adding one or multiple items to different categories
-    of the knowledge graph in a single request. Items are appended to existing data.
+    This endpoint allows setting one or multiple categories of the knowledge graph
+    in a single request. Items are SET directly, replacing existing data in those categories.
 
     Categories:
     - education: List of education entries (degree, institution, year, etc.)
@@ -72,72 +72,64 @@ def add_to_knowledge_graph(
     - certifications: List of certification entries
     - skills: List of skill strings
     - misc: Dictionary for miscellaneous information
+
+    Note: Only the categories provided in the request will be updated.
+    Categories not included will remain unchanged.
     """
     try:
         user_id = current_user['user_id']
         email = current_user['email']
 
-        logger.info(f"Adding items to knowledge graph for user: {email}")
+        logger.info(f"Setting knowledge graph items for user: {email}")
 
-        # Get current user data
-        user = UserOperations.get_user_by_id(user_id)
-        current_kg = user.get('knowledge_graph', {})
+        # Track what was set
+        set_items = {}
 
-        # Track what was added
-        added_items = {}
-
-        # Build update operations using MongoDB $push for arrays and $set for objects
+        # Build update operations - directly set the provided data
         update_operations = {}
 
-        if updates.education is not None and len(updates.education) > 0:
-            update_operations["knowledge_graph.education"] = current_kg.get('education', []) + updates.education
-            added_items['education'] = len(updates.education)
+        if updates.education is not None:
+            update_operations["knowledge_graph.education"] = updates.education
+            set_items['education'] = len(updates.education)
 
-        if updates.work_experience is not None and len(updates.work_experience) > 0:
-            update_operations["knowledge_graph.work_experience"] = current_kg.get('work_experience', []) + updates.work_experience
-            added_items['work_experience'] = len(updates.work_experience)
+        if updates.work_experience is not None:
+            update_operations["knowledge_graph.work_experience"] = updates.work_experience
+            set_items['work_experience'] = len(updates.work_experience)
 
-        if updates.research_work is not None and len(updates.research_work) > 0:
-            update_operations["knowledge_graph.research_work"] = current_kg.get('research_work', []) + updates.research_work
-            added_items['research_work'] = len(updates.research_work)
+        if updates.research_work is not None:
+            update_operations["knowledge_graph.research_work"] = updates.research_work
+            set_items['research_work'] = len(updates.research_work)
 
-        if updates.projects is not None and len(updates.projects) > 0:
-            update_operations["knowledge_graph.projects"] = current_kg.get('projects', []) + updates.projects
-            added_items['projects'] = len(updates.projects)
+        if updates.projects is not None:
+            update_operations["knowledge_graph.projects"] = updates.projects
+            set_items['projects'] = len(updates.projects)
 
-        if updates.certifications is not None and len(updates.certifications) > 0:
-            update_operations["knowledge_graph.certifications"] = current_kg.get('certifications', []) + updates.certifications
-            added_items['certifications'] = len(updates.certifications)
+        if updates.certifications is not None:
+            update_operations["knowledge_graph.certifications"] = updates.certifications
+            set_items['certifications'] = len(updates.certifications)
 
-        if updates.skills is not None and len(updates.skills) > 0:
-            # For skills, avoid duplicates
-            current_skills = set(current_kg.get('skills', []))
-            new_skills = [skill for skill in updates.skills if skill not in current_skills]
-            if new_skills:
-                update_operations["knowledge_graph.skills"] = list(current_skills) + new_skills
-                added_items['skills'] = len(new_skills)
+        if updates.skills is not None:
+            update_operations["knowledge_graph.skills"] = updates.skills
+            set_items['skills'] = len(updates.skills)
 
         if updates.misc is not None:
-            # Merge misc dictionaries
-            current_misc = current_kg.get('misc', {})
-            current_misc.update(updates.misc)
-            update_operations["knowledge_graph.misc"] = current_misc
-            added_items['misc'] = len(updates.misc)
+            update_operations["knowledge_graph.misc"] = updates.misc
+            set_items['misc'] = len(updates.misc) if isinstance(updates.misc, dict) else 1
 
         if not update_operations:
-            raise HTTPException(status_code=400, detail="No items provided to add")
+            raise HTTPException(status_code=400, detail="No items provided to set")
 
         # Update the user
         result = UserOperations.update_user(email, update_operations)
 
-        logger.info(f"Successfully added items to knowledge graph: {added_items}")
+        logger.info(f"Successfully set knowledge graph items: {set_items}")
 
         return {
-            "message": "Items added to knowledge graph successfully",
+            "message": "Knowledge graph items set successfully",
             "user_id": user_id,
             "email": email,
-            "added_items": added_items,
-            "total_items_added": sum(v for v in added_items.values() if isinstance(v, int))
+            "set_items": set_items,
+            "total_items_set": sum(v for v in set_items.values() if isinstance(v, int))
         }
 
     except HTTPException:
