@@ -18,7 +18,9 @@ export interface ResumeValues
     extends GeneralInfoValues,
     PersonalInfoValues,
     JobDescriptionValues,
-    QuestionAnswerValues { }
+    QuestionAnswerValues,
+    EducationValues,
+    ProjectsValues { }
 
 
 
@@ -30,6 +32,7 @@ export const personalInfoSchema = z.object({
     address: optionalString,
     phone: optionalString,
     email: optionalString,
+    socialMediaHandles: z.record(z.string(), z.string()).optional(),
 });
 
 export type PersonalInfoValues = z.infer<typeof personalInfoSchema>;
@@ -48,9 +51,50 @@ export type JobDescriptionValues = z.infer<typeof JobDescriptionSchema>;
 export const QuestionAnswerSchema = z.object({
     questions: z.array(
         z.object({
+            id: z.string().optional(),
             ques: optionalString,
-            ans: optionalString
+            ans: optionalString,
+            relatedField: optionalString,
+            related_field: optionalString,
+            status: z.enum(["answered", "unanswered"]).optional(),
+            // For backwards compatibility with API response
+            question: optionalString,
+            answer: optionalString,
         })
     )
 })
 export type QuestionAnswerValues = z.infer<typeof QuestionAnswerSchema>
+
+// Education
+export const educationSchema = z.object({
+    educations: z
+        .array(
+            z.object({
+                degree: optionalString,
+                school: optionalString,
+                startDate: optionalString, // ISO date string or empty
+                endDate: optionalString,   // ISO date string or empty
+                marks: optionalString,
+            })
+        )
+        .optional(),
+});
+
+export type EducationValues = z.infer<typeof educationSchema>;
+
+// Projects
+export const projectsSchema = z.object({
+    projects: z
+        .array(
+            z.object({
+                title: optionalString,
+                link: optionalString,
+                startDate: optionalString, // ISO date string or empty
+                endDate: optionalString,   // ISO date string or empty
+                description: optionalString,
+            })
+        )
+        .optional(),
+});
+
+export type ProjectsValues = z.infer<typeof projectsSchema>;

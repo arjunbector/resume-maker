@@ -8,15 +8,18 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import LoadingButton from "@/components/ui/loading-button";
 import { Textarea } from "@/components/ui/textarea";
 import { EditorFormProps } from "@/lib/types";
 import { JobDescriptionSchema, JobDescriptionValues } from "@/lib/validations";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+import LoadingPopup from "./loading-popup";
+import { compareSkills, generateQuestionnaire } from "@/lib/api";
 interface JobDescriptionFormProps extends EditorFormProps {
   resumeData: any;
   setResumeData: (resumeData: any) => void;
@@ -34,46 +37,104 @@ export default function JobDescriptionForm({
     },
   });
   const router = useRouter();
+  const searchparams = useSearchParams();
+  const session_id = searchparams.get("resumeId");
+  const [showPopup, setShowPopup] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0);
 
   const { isPending, mutate } = useMutation({
     mutationFn: async (values: JobDescriptionValues) => {
-      const data = {
+      setShowPopup(true);
+      setCurrentStep(0);
+
+      // Step 1: Analyze job description
+      const analyzeData = {
         job_role: values.applyingJobTitle,
-        company_url: values.companyWebsite,
         job_description: values.jobDescriptionString,
+        company_name: values.companyName,
+        session_id: session_id,
       };
-      // const data = {
-      //   job_role: "Senior Firmware Engineer",
-      //   company_url: "https://kshaminnovation.in",
-      //   job_description: "We are looking for a senior firmware engineer...",
-      // };
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/job-questions`,
+
+      const analyzeResponse = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/ai/analyze`,
         {
           headers: {
             "Content-Type": "application/json",
           },
           method: "POST",
-          body: JSON.stringify(data),
+          body: JSON.stringify(analyzeData),
+          credentials: "include",
         }
       );
-      return response.json();
+
+      if (!analyzeResponse.ok) {
+        console.log("herer");
+        throw new Error("Failed to analyze job description");
+      }
+
+      const analyzeResult = await analyzeResponse.json();
+      setCurrentStep(1);
+      // Step 2: Compare skills
+      const compareResult = await compareSkills(session_id!);
+      setCurrentStep(2);
+      let questionnaireResult: any = null;
+      if (compareResult.total_missing > 0) {
+        // Step 3: Generate questionnaire
+        questionnaireResult = await generateQuestionnaire(session_id!);
+        setCurrentStep(3);
+      } else {
+        const newSearchParams = new URLSearchParams(searchparams);
+        newSearchParams.set("step", "optimize");
+        router.push(`/editor?${newSearchParams.toString()}`);
+      }
+
+      return {
+        analyze: analyzeResult,
+        compare: compareResult,
+        questionnaire: questionnaireResult,
+      };
     },
     onSuccess: (data) => {
       toast.success("Job description processed successfully");
-      setResumeData({
-        ...resumeData,
-        questions: data.questions
-          ? data.questions.map((q: string) => ({
-              ques: q,
-              ans: "",
-            }))
-          : [],
-      });
-      router.push("/editor?step=questionnaire");
+      setShowPopup(false);
+      setCurrentStep(0);
+
+      // Transform and save questionnaire data
+      const newSearchParams = new URLSearchParams(searchparams);
+
+      if (
+        data.questionnaire?.questions &&
+        data.questionnaire?.questions.length > 0
+      ) {
+        const transformedQuestions = data.questionnaire.questions.map(
+          (q: any) => ({
+            id: q.id,
+            ques: q.question,
+            ans: q.answer || "",
+            relatedField: q.related_field,
+            status: q.status,
+          })
+        );
+
+        setResumeData({
+          ...resumeData,
+          questions: transformedQuestions,
+        });
+        newSearchParams.set("step", "questionnaire");
+      } else {
+        newSearchParams.set("step", "optimize");
+      }
+
+
+      router.push(`/editor?${newSearchParams.toString()}`);
     },
     onError: (error) => {
+      if (error) {
+        toast.error(error.message);
+      }
       toast.error("Failed to process job description");
+      setShowPopup(false);
+      setCurrentStep(0);
     },
   });
 
@@ -91,47 +152,54 @@ export default function JobDescriptionForm({
   }, [form, resumeData, setResumeData]);
 
   return (
-    <div className="mx-auto max-w-xl space-y-6">
-      <div className="space-y-1.5 text-center">
-        <h2 className="text-2xl font-semibold">Job Description</h2>
-        <p className="text-muted-foreground text-sm">
-          Tell us about the job you are applying for.
-        </p>
-        <Form {...form}>
-          <form
-            className="space-y-3"
-            onSubmit={form.handleSubmit((values) => mutate(values))}
-          >
-            <FormField
-              {...form}
-              name="applyingJobTitle"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Job Title</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              {...form}
-              name="jobDescriptionString"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>
-                    Job Description
-                    <span className="font-extralight">(optional)</span>
-                  </FormLabel>
-                  <FormControl>
-                    <Textarea {...field} rows={10} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
+    <>
+      <LoadingPopup
+        open={showPopup}
+        setOpen={setShowPopup}
+        currentStep={currentStep}
+      />
+
+      <div className="mx-auto max-w-xl space-y-6">
+        <div className="space-y-1.5 text-center">
+          <h2 className="text-2xl font-semibold">Job Description</h2>
+          <p className="text-muted-foreground text-sm">
+            Tell us about the job you are applying for.
+          </p>
+          <Form {...form}>
+            <form
+              className="space-y-3"
+              onSubmit={form.handleSubmit((values) => mutate(values))}
+            >
+              <FormField
+                {...form}
+                name="applyingJobTitle"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Job Title</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                {...form}
+                name="jobDescriptionString"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      Job Description
+                      <span className="font-extralight">(optional)</span>
+                    </FormLabel>
+                    <FormControl>
+                      <Textarea {...field} rows={10} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              {/* <FormField
               {...form}
               name="jobDescriptionFile"
               render={({ field }) => (
@@ -151,60 +219,55 @@ export default function JobDescriptionForm({
                   </FormControl>
                 </FormItem>
               )}
-            />
+            /> */}
 
-            <FormField
-              {...form}
-              name="companyName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Company Name</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+              <FormField
+                {...form}
+                name="companyName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Company Name</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <FormField
-              {...form}
-              name="companyWebsite"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Company Website</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <div className="flex justify-end">
-              <Button
-                className="cursor-pointer"
-                type="reset"
-                onClick={() => {
-                  form.reset();
-                }}
-                variant="ghost"
-                title="This will only reset this page"
-              >
-                Reset
-              </Button>
-              <Button
-                className="cursor-pointer"
-                type="submit"
-                variant="default"
-                title="This will only reset this page"
-                disabled={isPending}
-              >
-                {isPending ? "Processing..." : "Process"}
-              </Button>
-            </div>
-          </form>
-        </Form>
+              <FormField
+                {...form}
+                name="companyWebsite"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Company Website</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="flex justify-end">
+                <Button
+                  className="cursor-pointer"
+                  type="reset"
+                  onClick={() => {
+                    form.reset();
+                  }}
+                  variant="ghost"
+                  title="This will only reset this page"
+                >
+                  Reset
+                </Button>
+                <LoadingButton type="submit" loading={isPending}>
+                  Next
+                </LoadingButton>
+              </div>
+            </form>
+          </Form>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

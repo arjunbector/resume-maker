@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import ResumesList from "./ResumesList";
+import { useQuery } from "@tanstack/react-query";
 
 export const metadata: Metadata = {
   title: "Resumes",

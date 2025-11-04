@@ -8,7 +8,7 @@ import { steps } from "./steps";
 import BreadCrumbs from "./bread-crumbs";
 import Footer from "./footer";
 import { ResumeValues } from "@/lib/validations";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 
 // interface ResumeEditorProps {
 //   resumeToEdit: ResumeServerData | null;
@@ -43,27 +43,48 @@ export default function ResumeEditor() {
     },
   });
 
+  const query = useQuery({
+    queryKey: ["resumeData", searchParams.get("resumeId")],
+    queryFn: async () => {
+      const resumeId = searchParams.get("resumeId");
+      if (!resumeId) return null;
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/sessions/${resumeId}/resume-data`,
+        {
+          method: "GET",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      if (!res.ok) {
+        throw new Error("Failed to fetch resume data");
+      }
+      const data = await res.json();
+      return data as ResumeValues;
+    },
+    enabled: !!searchParams.get("resumeId"),
+  });
+
   const [resumeData, setResumeData] = useState<ResumeValues>({
-    generalInfo: {
-      title: "",
-      description: "",
-    },
-    personalInfo: {
-      firstName: "",
-      lastName: "",
-      jobTitle: "",
-      city: "",
-      country: "",
-      phone: "",
-      email: "",
-    },
-    jobDescription: {
-      applyingJobTitle: "",
-      companyName: "",
-      companyWebsite: "",
-      jobDescriptionString: "",
-      jobDescriptionFile: undefined,
-    },
+    // General info
+    title: "",
+    description: "",
+    // Personal info (optional at init; will be filled by forms)
+    name: "",
+    jobTitle: "",
+    address: "",
+    phone: "",
+    email: "",
+    socialMediaHandles: {},
+    // Job description
+    applyingJobTitle: "",
+    companyName: "",
+    companyWebsite: "",
+    jobDescriptionString: "",
+    jobDescriptionFile: undefined as unknown as File | undefined,
+    // Questionnaire
     questions: [],
   });
   console.log(resumeData);

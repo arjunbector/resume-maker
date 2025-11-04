@@ -1,6 +1,6 @@
 import useDimensions from "@/hooks/useDimensions";
 import { cn } from "@/lib/utils";
-import { formatDate } from "date-fns";
+import { format, formatDate } from "date-fns";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
@@ -38,8 +38,8 @@ export default function ResumePreview({
         <PersonalInfoHeader resumeData={resumeData} />
         {/* <SummarySection resumeData={resumeData} /> */}
         {/* <WorkExxperienceSection resumeData={resumeData} /> */}
-        {/* <ProjectsSection resumeData={resumeData} /> */}
-        {/* <EducationSection resumeData={resumeData} /> */}
+        <ProjectsSection resumeData={resumeData} />
+        <EducationSection resumeData={resumeData} />
         {/* <SkillsSection resumeData={resumeData} /> */}
       </div>
     </div>
@@ -52,22 +52,17 @@ interface ResumeSectionProps {
 
 function PersonalInfoHeader({ resumeData }: ResumeSectionProps) {
   console.log("resume me values =", resumeData);
-  const { firstName, lastName, jobTitle, city, country, phone, email } =
-    resumeData;
+  const { name, jobTitle, address, phone, email } = resumeData;
 
   return (
     <div className="flex items-center gap-6">
       <div className="space-y-2.5">
         <div className="space-y-1">
-          <p className="text-3xl font-bold">
-            {firstName} {lastName}
-          </p>
+          <p className="text-3xl font-bold">{name}</p>
           <p className="font-medium">{jobTitle}</p>
           <p className="text-xs text-gray-500">
-            {city}
-            {city && country ? ", " : ""}
-            {country}
-            {(city || country) && (phone || email) ? " • " : ""}
+            {address}
+            {address && (phone || email) ? " • " : ""}
             {[phone, email].filter(Boolean).join(" • ")}
           </p>
         </div>
@@ -152,106 +147,106 @@ function PersonalInfoHeader({ resumeData }: ResumeSectionProps) {
 //   );
 // }
 
-// function EducationSection({ resumeData }: ResumePreviewProps) {
-//   const { educations, colorHex } = resumeData;
-//   const educationsNotEmpty = educations?.filter(
-//     (edu) => Object.values(edu).filter(Boolean).length > 0
-//   );
-//   if (!educationsNotEmpty?.length) return null;
-//   return (
-//     <>
-//       <hr
-//         className="border-2"
-//         style={{
-//           borderColor: colorHex,
-//         }}
-//       />
-//       <div className="space-y-3">
-//         <p
-//           className="text-lg font-semibold"
-//           style={{
-//             color: colorHex,
-//           }}
-//         >
-//           Education
-//         </p>
-//         {educationsNotEmpty.map((edu, idx) => (
-//           <div key={idx} className="break-after-avoid space-y-1">
-//             <div className="flex items-center justify-between text-sm font-semibold">
-//               <span>{edu.degree}</span>
-//               <div className="flex flex-col items-end">
-//                 {edu.startDate && (
-//                   <span>
-//                     {formatDate(edu.startDate, "MMMM yyyy")}
-//                     {edu.endDate
-//                       ? ` -  ${formatDate(edu.endDate, "MMMM yyyy")}`
-//                       : ""}
-//                   </span>
-//                 )}
-//                 <p className="text-xs font-semibold">{edu.marks}</p>
-//               </div>
-//             </div>
-//             <p className="text-xs font-semibold">{edu.school}</p>
-//           </div>
-//         ))}
-//       </div>
-//     </>
-//   );
-// }
+function EducationSection({ resumeData }: ResumePreviewProps) {
+  const { educations, colorHex } = resumeData;
+  const educationsNotEmpty = educations?.filter(
+    (edu: any) => Object.values(edu).filter(Boolean).length > 0
+  );
+  if (!educationsNotEmpty?.length) return null;
+  return (
+    <>
+      <hr
+        className="border-2"
+        style={{
+          borderColor: colorHex,
+        }}
+      />
+      <div className="space-y-3">
+        <p
+          className="text-lg font-semibold"
+          style={{
+            color: colorHex,
+          }}
+        >
+          Education
+        </p>
+        {educationsNotEmpty.map((edu: any, idx: number) => (
+          <div key={idx} className="break-after-avoid space-y-1">
+            <div className="flex items-center justify-between text-sm font-semibold">
+              <span>{edu.degree}</span>
+              <div className="flex flex-col items-end">
+                {edu.startDate && (
+                  <span>
+                    {format(new Date(edu.startDate), "MMMM yyyy")}
+                    {edu.endDate
+                      ? ` -  ${format(new Date(edu.endDate), "MMMM yyyy")}`
+                      : ""}
+                  </span>
+                )}
+                <p className="text-xs font-semibold">{edu.marks}</p>
+              </div>
+            </div>
+            <p className="text-xs font-semibold">{edu.school}</p>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
 
-// function ProjectsSection({ resumeData }: ResumePreviewProps) {
-//   const { projects, colorHex } = resumeData;
-//   const projectsNotEmpty = projects?.filter(
-//     (project) => Object.values(project).filter(Boolean).length > 0
-//   );
-//   if (!projectsNotEmpty?.length) return null;
-//   return (
-//     <>
-//       <hr
-//         className="border-2"
-//         style={{
-//           borderColor: colorHex,
-//         }}
-//       />
-//       <div className="space-y-3">
-//         <p
-//           className="text-lg font-semibold"
-//           style={{
-//             color: colorHex,
-//           }}
-//         >
-//           Projects
-//         </p>
-//         {projectsNotEmpty.map((project, idx) => (
-//           <div key={idx} className="break-after-avoid space-y-1">
-//             <div className="flex items-center justify-between text-sm font-semibold">
-//               <span>
-//                 {project.link ? (
-//                   <Link target="_blank" href={project.link}>
-//                     {project.title}
-//                   </Link>
-//                 ) : (
-//                   project.title
-//                 )}
-//               </span>
-//               {project.startDate && (
-//                 <span>
-//                   {formatDate(project.startDate, "MMMM yyyy")}{" "}
-//                   {project.endDate
-//                     ? `- ${formatDate(project.endDate, "MMMM yyyy")}`
-//                     : ""}
-//                 </span>
-//               )}
-//             </div>
-//             <div className="text-xs whitespace-pre-line">
-//               {project.description}
-//             </div>
-//           </div>
-//         ))}
-//       </div>
-//     </>
-//   );
-// }
+function ProjectsSection({ resumeData }: ResumePreviewProps) {
+  const { projects, colorHex } = resumeData;
+  const projectsNotEmpty = projects?.filter(
+    (project: any) => Object.values(project).filter(Boolean).length > 0
+  );
+  if (!projectsNotEmpty?.length) return null;
+  return (
+    <>
+      <hr
+        className="border-2"
+        style={{
+          borderColor: colorHex,
+        }}
+      />
+      <div className="space-y-3">
+        <p
+          className="text-lg font-semibold"
+          style={{
+            color: colorHex,
+          }}
+        >
+          Projects
+        </p>
+        {projectsNotEmpty.map((project: any, idx: number) => (
+          <div key={idx} className="break-after-avoid space-y-1">
+            <div className="flex items-center justify-between text-sm font-semibold">
+              <span>
+                {project.link ? (
+                  <Link target="_blank" href={project.link}>
+                    {project.title}
+                  </Link>
+                ) : (
+                  project.title
+                )}
+              </span>
+              {project.startDate && (
+                <span>
+                  {formatDate(project.startDate, "MMMM yyyy")}{" "}
+                  {project.endDate
+                    ? `- ${formatDate(project.endDate, "MMMM yyyy")}`
+                    : ""}
+                </span>
+              )}
+            </div>
+            <div className="text-xs whitespace-pre-line">
+              {project.description}
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
 
 // function SkillsSection({ resumeData }: ResumePreviewProps) {
 //   const { skills, colorHex, borderStyle } = resumeData;
