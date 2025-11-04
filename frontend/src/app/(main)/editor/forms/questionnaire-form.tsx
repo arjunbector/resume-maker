@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { EditorFormProps } from "@/lib/types";
 import { QuestionAnswerSchema, QuestionAnswerValues } from "@/lib/validations";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm, useFieldArray } from "react-hook-form";
 import { toast } from "sonner";
 import { useEffect } from "react";
@@ -55,6 +55,7 @@ export default function QuestionnaireForm({
     }
   }, [resumeData.questions, form]);
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const { mutate, isPending } = useMutation({
     mutationFn: async (values: QuestionAnswerValues) => {
@@ -115,6 +116,9 @@ export default function QuestionnaireForm({
       // After saving answers, check if we need to generate more questions
       if (response.ok) {
         const compareResult = await compareSkills(session_id);
+        queryClient.invalidateQueries({
+          queryKey: ["resumeData", session_id],
+        });
 
         if (compareResult?.total_missing && compareResult.total_missing !== 0) {
           console.log(compareResult);
@@ -237,7 +241,7 @@ export default function QuestionnaireForm({
           })}
 
           <div className="flex justify-end gap-2 pt-4">
-            <Button
+            {/* <Button
               className="cursor-pointer"
               type="reset"
               onClick={() => form.reset()}
@@ -246,7 +250,7 @@ export default function QuestionnaireForm({
               disabled={isPending}
             >
               Reset
-            </Button>
+            </Button> */}
             <LoadingButton type="submit" loading={isPending}>
               Save
             </LoadingButton>

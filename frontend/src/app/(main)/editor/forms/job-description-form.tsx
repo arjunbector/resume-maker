@@ -260,7 +260,7 @@ export default function JobDescriptionForm({
                 )}
               />
               <div className="flex justify-end">
-                <Button
+                {/* <Button
                   className="cursor-pointer"
                   type="reset"
                   onClick={() => {
@@ -270,7 +270,7 @@ export default function JobDescriptionForm({
                   title="This will only reset this page"
                 >
                   Reset
-                </Button>
+                </Button> */}
                 <LoadingButton type="submit" loading={isPending}>
                   Next
                 </LoadingButton>

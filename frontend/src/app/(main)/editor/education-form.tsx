@@ -50,13 +50,8 @@ export default function EducationalForm({
       educations: resumeData.educations || [],
     },
   });
-  // Reset form when resumeData changes
-  useEffect(() => {
-    form.reset({
-      educations: resumeData.educations || [],
-    });
-  }, [resumeData.educations, form]);
 
+  
   // Fixed useEffect for Education Form
   useEffect(() => {
     // Create a subscription to watch form changes

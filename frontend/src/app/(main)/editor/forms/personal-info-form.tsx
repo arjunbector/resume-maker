@@ -335,7 +335,7 @@ export default function PersonalInfoForm({
               <LoadingButton type="submit" loading={isPending}>
                 Next
               </LoadingButton>
-              <Button
+              {/* <Button
                 className="cursor-pointer"
                 type="reset"
                 onClick={() => {
@@ -345,7 +345,7 @@ export default function PersonalInfoForm({
                 title="This will only reset this page"
               >
                 Reset
-              </Button>
+              </Button> */}
             </div>
           </form>
         </Form>
