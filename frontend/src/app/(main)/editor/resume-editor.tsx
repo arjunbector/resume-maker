@@ -174,7 +174,7 @@ export default function ResumeEditor() {
         showSmResumePreview={showSmResumePreview}
         isSaving={isSaving}
       /> */}
-      <Footer currentStep={currentStep} setCurrentStep={setStep} />
+      {/* <Footer currentStep={currentStep} setCurrentStep={setStep} /> */}
     </div>
   );
 }

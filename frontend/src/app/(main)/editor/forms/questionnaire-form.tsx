@@ -19,7 +19,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useForm, useFieldArray } from "react-hook-form";
 import { toast } from "sonner";
 import { useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { compareSkills, generateQuestionnaire } from "@/lib/api";
 import LoadingButton from "@/components/ui/loading-button";
@@ -54,6 +54,7 @@ export default function QuestionnaireForm({
       });
     }
   }, [resumeData.questions, form]);
+  const router = useRouter();
 
   const { mutate, isPending } = useMutation({
     mutationFn: async (values: QuestionAnswerValues) => {
@@ -137,6 +138,10 @@ export default function QuestionnaireForm({
               questions: transformedQuestions,
             };
           }
+        } else {
+          const newSearchParams = new URLSearchParams(searchParams);
+          newSearchParams.set("step", "optimize");
+          router.push(`/editor?${newSearchParams.toString()}`);
         }
       }
 

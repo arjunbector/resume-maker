@@ -18,6 +18,7 @@ import { useForm } from "react-hook-form";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useRouter, useSearchParams } from "next/navigation";
+import SkillsDialog from "./skills-dialog";
 
 // Helper functions to convert between array and comma-separated string
 const arrayToCommaSeparated = (arr: string[]): string => {
@@ -37,6 +38,7 @@ export default function SkillsForm({
 }: EditorFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [showSkills, setShowSkills] = useState<boolean>(false);
 
   // Use local state to hold the textarea string value
   const [skillsText, setSkillsText] = useState<string>(
@@ -49,8 +51,6 @@ export default function SkillsForm({
       skills: resumeData.skills || [],
     },
   });
-
-
 
   // Update form and parent state when skillsText changes
   useEffect(() => {
@@ -87,9 +87,9 @@ export default function SkillsForm({
     },
     onSuccess: () => {
       toast.success("Skills saved successfully");
-    //   const newSearchParams = new URLSearchParams(searchParams);
-    //   newSearchParams.set("step", "optimize");
-    //   router.push(`/editor?${newSearchParams.toString()}`);
+      //   const newSearchParams = new URLSearchParams(searchParams);
+      //   newSearchParams.set("step", "optimize");
+      //   router.push(`/editor?${newSearchParams.toString()}`);
     },
     onError: () => {
       toast.error("Failed to save skills");
@@ -97,48 +97,58 @@ export default function SkillsForm({
   });
 
   return (
-    <div className="mx-auto max-w-xl space-y-6">
-      <div className="space-y-1.5 text-center">
-        <h2 className="text-2xl font-semibold">Skills</h2>
-        <p className="text-muted-foreground text-sm">
-          Enter your skills separated by commas.
-        </p>
-      </div>
-      <Form {...form}>
-        <form
-          className="space-y-3"
-          onSubmit={form.handleSubmit((values) => mutate(values))}
-        >
-          <FormField
-            control={form.control}
-            name="skills"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Skills</FormLabel>
-                <FormControl>
-                  <Textarea
-                    value={skillsText}
-                    onChange={(e) => setSkillsText(e.target.value)}
-                    placeholder="Python, JavaScript, React, Node.js, MongoDB"
-                    rows={4}
-                  />
-                </FormControl>
-                <FormMessage />
-                <p className="text-xs text-muted-foreground mt-2">
-                  Separate each skill with a comma. Example: "Python,
-                  JavaScript, React"
-                </p>
-              </FormItem>
-            )}
-          />
+    <>
+      {showSkills && <SkillsDialog open={showSkills} setOpen={setShowSkills} />}
+      <div className="mx-auto max-w-xl space-y-6">
+        <div className="space-y-1.5 text-center">
+          <h2 className="text-2xl font-semibold">Skills</h2>
+          <p className="text-muted-foreground text-sm">
+            Enter your skills separated by commas.
+          </p>
+        </div>
+        <Form {...form}>
+          <form
+            className="space-y-3"
+            onSubmit={form.handleSubmit((values) => mutate(values))}
+          >
+            <FormField
+              control={form.control}
+              name="skills"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Skills</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      value={skillsText}
+                      onChange={(e) => setSkillsText(e.target.value)}
+                      placeholder="Python, JavaScript, React, Node.js, MongoDB"
+                      rows={4}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Separate each skill with a comma. Example: "Python,
+                    JavaScript, React"
+                  </p>
+                </FormItem>
+              )}
+            />
 
-          <div className="flex justify-end">
-            <LoadingButton type="submit" loading={isPending}>
-              Next
-            </LoadingButton>
-          </div>
-        </form>
-      </Form>
-    </div>
+            <div className="flex justify-end">
+              <LoadingButton type="submit" loading={isPending}>
+                Next
+              </LoadingButton>
+            </div>
+          </form>
+        </Form>
+        <div>
+          <Button onClick={()=>{
+            setShowSkills(true);
+          }} className="w-full" variant="outline">
+            Show suggested skills
+          </Button>
+        </div>
+      </div>
+    </>
   );
 }

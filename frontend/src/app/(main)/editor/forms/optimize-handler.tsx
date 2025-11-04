@@ -48,7 +48,7 @@ export default function OptimizeHandler() {
     // Simulate backend progress; replace with real progress updates if available
     const interval = setInterval(() => {
       setCurrentStep((prev) => (prev < STEPS.length - 1 ? prev + 1 : prev));
-    }, 900);
+    }, 3000);
     if (query.isSuccess || query.isError) {
       clearInterval(interval);
     }
