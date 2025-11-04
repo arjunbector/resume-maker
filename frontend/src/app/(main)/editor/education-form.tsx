@@ -51,7 +51,7 @@ export default function EducationalForm({
     },
   });
 
-  
+
   // Fixed useEffect for Education Form
   useEffect(() => {
     // Create a subscription to watch form changes
@@ -134,9 +134,9 @@ export default function EducationalForm({
     },
     onSuccess: () => {
       toast.success("Education info saved successfully");
-      // const newSearchParams = new URLSearchParams(searchParams);
-      // newSearchParams.set("step", "projects");
-      // router.push(`/editor?${newSearchParams.toString()}`);
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.set("step", "projects");
+      router.push(`/editor?${newSearchParams.toString()}`);
       queryClient.invalidateQueries({
         queryKey: ["resumeData", searchParams.get("resumeId")],
       });

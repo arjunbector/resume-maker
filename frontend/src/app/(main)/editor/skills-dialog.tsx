@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import { AlertCircle, Lightbulb, Loader2Icon } from "lucide-react";
+import { TextShimmer } from "@/components/ui/text-shimmer";
 
 interface Suggestion {
   field_name: string;
@@ -77,8 +78,8 @@ export default function SkillsDialog({ open, setOpen }: SkillsDialogProps) {
           <div className="space-y-3">
             {query.isLoading && (
               <div className="flex items-center justify-center py-8">
-                <Loader2Icon className="size-10 animate-spin"/>
-                <span className="ml-2 text-muted-foreground">Analyzing your resume...</span>
+                <Loader2Icon className="size-6 animate-spin text-neutral-500"/>
+                <span className="ml-2 text-muted-foreground"><TextShimmer>Analyzing your resume...</TextShimmer></span>
               </div>
             )}
             
