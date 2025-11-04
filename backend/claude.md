@@ -67,9 +67,9 @@ The application follows a modular FastAPI architecture with clear separation of 
 
 **API Routers** ([app/routers/](app/routers/))
 - `auth.py` - Authentication endpoints (signup, login, logout, me at `/api/v1/auth`)
-- `users.py` - User management endpoints (GET/PUT at `/api/v1/users`)
-- `sessions.py` - Session management (POST/PUT at `/api/v1/sessions`)
-- `ai.py` - AI endpoints for custom prompts and AI interactions (POST at `/api/v1/ai/custom`)
+- `users.py` - User management endpoints (GET/PUT at `/api/v1/users`, POST `/knowledge-graph/add`)
+- `sessions.py` - Session management (POST/PUT/GET at `/api/v1/sessions`, GET `/resume-data` for complete resume data)
+- `ai.py` - AI endpoints (analyze, compare, generate-questionnaire, answer-question at `/api/v1/ai`)
 
 **AI Module** ([app/ai/](app/ai/))
 - `agent.py` - ResumeAgent class for AI-powered resume generation and analysis (supports Gemini and Ollama via LiteLLM)
