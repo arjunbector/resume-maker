@@ -16,6 +16,7 @@ import { useMutation } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 
 export default function SignUpPage() {
   const form = useForm<AuthValues>({
@@ -56,6 +57,7 @@ export default function SignUpPage() {
       window.location.href = "/";
     },
     onError: (error: any) => {
+      toast.error(error.message)
       console.error("Error signing up", error);
     },
   });

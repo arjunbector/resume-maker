@@ -8,6 +8,7 @@ import PersonalInfoForm from "./forms/personal-info-form";
 import QuestionnaireForm from "./forms/questionnaire-form";
 import ProjectsForm from "./projects-form";
 import SkillsForm from "./skills";
+import WorkExperienceForm from "./forms/work-experience-form";
 
 export const steps: {
   title: string;
@@ -39,11 +40,11 @@ export const steps: {
     component: Optimize,
     key: "optimize",
   },
-  //   {
-  //     title: "Work Experience",
-  //     component: WorkExperienceForm,
-  //     key: "work-experience",
-  //   },
+  {
+    title: "Work Experience",
+    component: WorkExperienceForm,
+    key: "work-experience",
+  },
   {
     title: "Education",
     component: EducationalForm,
@@ -53,7 +54,7 @@ export const steps: {
     title: "Projects",
     component: ProjectsForm,
     key: "projects",
-  },
+},
   // {
   //   title: "Research Work",
   //   component: ResearchForm,

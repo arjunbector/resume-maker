@@ -82,6 +82,15 @@ export function transformApiResponseToResumeData(apiResponse: any): ResumeValues
 
     // Skills (from professional_profile.skills)
     skills: professional_profile?.skills || [],
+
+    // Work Experience (from professional_profile.work_experience)
+    workExperiences: professional_profile?.work_experience?.map((work: any) => ({
+      company: work.company || "",
+      position: work.position || work.title || "",
+      startDate: work.start_date || "",
+      endDate: work.end_date || "",
+      description: work.description || "",
+    })) || [],
   };
 
   console.log("🔄 Transformed data:", transformedData);
@@ -125,7 +134,14 @@ export function transformResumeDataToApiFormat(resumeData: ResumeValues) {
         description: paper.description,
         url: paper.url,
       })) || [],
-      work_experience: [],
+      work_experience: resumeData.workExperiences?.map((work) => ({
+        company: work.company,
+        position: work.position,
+        title: work.position, // Some APIs might use title instead of position
+        start_date: work.startDate,
+        end_date: work.endDate,
+        description: work.description,
+      })) || [],
       skills: resumeData.skills || [],
       certifications: [],
       misc: {},

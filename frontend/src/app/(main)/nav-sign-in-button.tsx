@@ -20,7 +20,7 @@ export default function NavSignInButton() {
           credentials: "include",
         }
       );
-      setIsLoggedIn(res.ok);
+      setIsLoggedIn(res.status === 200);
     } catch (error) {
       setIsLoggedIn(false);
     } finally {
@@ -35,7 +35,7 @@ export default function NavSignInButton() {
         "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
 
       setIsLoggedIn(false);
-      window.location.href = "/";
+      window.location.reload();
     } catch (error) {
       console.error("Error logging out", error);
     }

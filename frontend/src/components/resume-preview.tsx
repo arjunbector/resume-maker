@@ -37,7 +37,7 @@ export default function ResumePreview({
       >
         <PersonalInfoHeader resumeData={resumeData} />
         {/* <SummarySection resumeData={resumeData} /> */}
-        {/* <WorkExxperienceSection resumeData={resumeData} /> */}
+        <WorkExxperienceSection resumeData={resumeData} />
         <EducationSection resumeData={resumeData} />
         <ProjectsSection resumeData={resumeData} />
         <ResearchSection resumeData={resumeData} />
@@ -98,55 +98,50 @@ function PersonalInfoHeader({ resumeData }: ResumeSectionProps) {
 //   );
 // }
 
-// function WorkExxperienceSection({ resumeData }: ResumePreviewProps) {
-//   const { workExperiences, colorHex } = resumeData;
-//   const workExperiencesNotEmpty = workExperiences?.filter(
-//     (exp:any) => Object.values(exp).filter(Boolean).length > 0
-//   );
-//   if (!workExperiencesNotEmpty?.length) return null;
-//   return (
-//     <>
-//       <hr
-//         className="border-2"
-//         style={{
-//           borderColor: colorHex,
-//         }}
-//       />
-//       <div className="space-y-3">
-//         <p
-//           className="text-lg font-semibold"
-//           style={{
-//             color: colorHex,
-//           }}
-//         >
-//           Work Experience
-//         </p>
-//         {workExperiencesNotEmpty.map((exp, idx) => (
-//           <div key={idx} className="break-after-avoid space-y-1">
-//             <div
-//               className="flex items-center justify-between text-sm font-semibold"
-//               style={{
-//                 color: colorHex,
-//               }}
-//             >
-//               <span>{exp.position}</span>
-//               {exp.startDate && (
-//                 <span>
-//                   {formatDate(exp.startDate, "MMMM yyyy")} -{" "}
-//                   {exp.endDate
-//                     ? formatDate(exp.endDate, "MMMM yyyy")
-//                     : "Present"}
-//                 </span>
-//               )}
-//             </div>
-//             <p className="text-xs font-semibold">{exp.company}</p>
-//             <div className="text-xs whitespace-pre-line">{exp.description}</div>
-//           </div>
-//         ))}
-//       </div>
-//     </>
-//   );
-// }
+function WorkExxperienceSection({ resumeData }: ResumePreviewProps) {
+  const { workExperiences, colorHex } = resumeData;
+  const workExperiencesNotEmpty = workExperiences?.filter(
+    (exp: any) => Object.values(exp).filter(Boolean).length > 0
+  );
+  if (!workExperiencesNotEmpty?.length) return null;
+  return (
+    <>
+      <hr className="border-2" />
+      <div className="space-y-3">
+        <p
+          className="text-lg font-semibold"
+          style={{
+            color: colorHex,
+          }}
+        >
+          Work Experience
+        </p>
+        {workExperiencesNotEmpty.map((exp:any, idx:number) => (
+          <div key={idx} className="break-after-avoid space-y-1">
+            <div
+              className="flex items-center justify-between text-sm font-semibold"
+              style={{
+                color: colorHex,
+              }}
+            >
+              <span>{exp.position}</span>
+              {exp.startDate && (
+                <span>
+                  {formatDate(exp.startDate, "MMMM yyyy")} -{" "}
+                  {exp.endDate
+                    ? formatDate(exp.endDate, "MMMM yyyy")
+                    : "Present"}
+                </span>
+              )}
+            </div>
+            <p className="text-xs font-semibold">{exp.company}</p>
+            <div className="text-xs whitespace-pre-line">{exp.description}</div>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
 
 function EducationSection({ resumeData }: ResumePreviewProps) {
   const { educations, colorHex } = resumeData;

@@ -22,7 +22,8 @@ export interface ResumeValues
     EducationValues,
     ProjectsValues,
     SkillsValues,
-    ResearchValues { }
+    ResearchValues,
+    WorkExperienceValues { }
 
 
 
@@ -124,3 +125,20 @@ export const skillsSchema = z.object({
         .optional(),
 });
 export type SkillsValues = z.infer<typeof skillsSchema>;
+
+// Work Experience
+export const workExperienceSchema = z.object({
+    workExperiences: z
+        .array(
+            z.object({
+                company: optionalString,
+                position: optionalString,
+                startDate: optionalString, // ISO date string or empty
+                endDate: optionalString,   // ISO date string or empty
+                description: optionalString,
+            })
+        )
+        .optional(),
+});
+
+export type WorkExperienceValues = z.infer<typeof workExperienceSchema>;
