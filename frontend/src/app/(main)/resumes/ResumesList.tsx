@@ -1,9 +1,16 @@
 "use client";
+import ResumePreview from "@/components/resume-preview";
 import { Button } from "@/components/ui/button";
+import {
+  transformApiResponseToResumeData,
+  transformResumeDataToApiFormat,
+} from "@/lib/transformers";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2Icon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useRef } from "react";
+import { useReactToPrint } from "react-to-print";
 
 export default function ResumesList() {
   const router = useRouter();
@@ -11,20 +18,20 @@ export default function ResumesList() {
     queryKey: ["resumesList"],
     queryFn: async () => {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/sessions/user/all`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/sessions/user/all/resume-data`,
         {
           credentials: "include",
         }
       );
       if (res.ok) {
         const data = await res.json();
-        return data.sessions;
+        return data.resume_data;
       }
     },
   });
   if (isLoading) {
     return (
-      <div>
+      <div className="mx-auto flex items-center justify-center w-full">
         <Loader2Icon className="size-5 animate-spin" />
       </div>
     );
@@ -40,9 +47,18 @@ export default function ResumesList() {
         New Resume
       </Button>
       <div className="flex flex-wrap gap-5 mt-10">
-        {data.map((res: any) => (
-          <ResumeCard resumeId={res.session_id} title={res.resume_name} />
-        ))}
+        {data.length === 0 ? (
+          <div>No resumes found.</div>
+        ) : (
+          data.map((res: any) => (
+            <ResumeCard
+              resumeId={res.session_id}
+              title={res.resume_metadata.resume_name}
+              description={res.resume_metadata.resume_description}
+              resume={res}
+            />
+          ))
+        )}
       </div>
     </div>
   );
@@ -51,14 +67,44 @@ export default function ResumesList() {
 interface ResumeCardProps {
   resumeId: string;
   title: string;
+  description?: string;
+  resume: any;
 }
-function ResumeCard({ resumeId, title }: ResumeCardProps) {
+function ResumeCard({ resumeId, title, description, resume }: ResumeCardProps) {
+  const contentRef = useRef<HTMLDivElement>(null);
+  const reactToPrintFn = useReactToPrint({
+    contentRef,
+    documentTitle: title || "Resume",
+  });
+  // console.log("\\n\n\n\n\n\n\n\n\n\n\n\nin card:;", resume);
+  console.log(
+    "\\n\n\n\n\n\n\n\n\n\n\n\nin card:;",
+    transformApiResponseToResumeData(resume)
+  );
   return (
-    <Link
-      href={`/editor?resumeId=${resumeId}`}
-      className="bg-neutral-300 p-5 rounded-2xl"
-    >
-      <h3>{title}</h3>
-    </Link>
+    <div className="group hover:border-border bg-secondary relative rounded-lg border border-transparent p-3 transition-colors">
+      <div className="space-y-3">
+        <Link
+          href={`/editor?resumeId=${resumeId}`}
+          className="inline-block w-full text-center"
+        >
+          <p className="line-clamp-1 font-semibold">
+            {title || "Untitled Resume"}
+          </p>
+          {description && <p className="line-clamp-2 text-sm">{description}</p>}
+        </Link>
+        <Link
+          href={`/editor?resumeId=${resumeId}`}
+          className="relative inline-block w-full"
+        >
+          <ResumePreview
+            contentRef={contentRef}
+            resumeData={transformResumeDataToApiFormat(resume)}
+            className="overflow-hidden shadow-sm transition-shadow group-hover:shadow-lg"
+          />
+          <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-white to-transparent" />
+        </Link>
+      </div>
+    </div>
   );
 }
