@@ -49,12 +49,6 @@ export default function ProjectsForm({
       projects: resumeData.projects || [],
     },
   });
-  // Reset form when resumeData changes
-  useEffect(() => {
-    form.reset({
-      projects: resumeData.projects || [],
-    });
-  }, [resumeData.projects, form]);
 
   useEffect(() => {
     // Create a subscription to watch form changes
@@ -136,7 +130,7 @@ export default function ProjectsForm({
     onSuccess: () => {
       toast.success("Projects saved successfully");
       const newSearchParams = new URLSearchParams(searchParams);
-      newSearchParams.set("step", "research-work");
+      newSearchParams.set("step", "skills");
       router.push(`/editor?${newSearchParams.toString()}`);
     },
     onError: () => {
