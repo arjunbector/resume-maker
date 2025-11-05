@@ -44,7 +44,7 @@ export default function ResumesList() {
       >
         New Resume
       </Button>
-      <div className="flex flex-wrap gap-5 mt-10">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-10">
         {data.length === 0 ? (
           <div>No resumes found.</div>
         ) : (

@@ -3,6 +3,9 @@ import { cn } from "@/lib/utils";
 import { useRef } from "react";
 import { useReactToPrint } from "react-to-print";
 import PrintResumeButton from "./print-resume-button";
+import { Button } from "@/components/ui/button";
+import { RotateCcw } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 interface ResumePreviewSectionProps {
   resumeData: any;
@@ -15,10 +18,20 @@ export default function ResumePreviewSection({
   className,
 }: ResumePreviewSectionProps) {
   const contentRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
   const reactToPrintFn = useReactToPrint({
     contentRef,
     documentTitle: resumeData.title || "Resume",
   });
+
+  const handleRefreshResume = () => {
+    const newSearchParams = new URLSearchParams(searchParams);
+    newSearchParams.set("step", "general-info");
+    router.push(`/editor?${newSearchParams.toString()}`);
+    window.location.reload();
+  };
 
   return (
     <div
@@ -42,8 +55,16 @@ export default function ResumePreviewSection({
               borderStyle: newBorderStyle,
             });
           }}
-        /> */}
+        /> */}{" "}
         <PrintResumeButton onPrintClick={reactToPrintFn} />
+        <Button
+          title="Refresh Resume"
+          variant="outline"
+          size="icon"
+          onClick={handleRefreshResume}
+        >
+          <RotateCcw />
+        </Button>
       </div>
       <div className="bg-secondary flex w-full justify-center overflow-y-auto p-3">
         <ResumePreview

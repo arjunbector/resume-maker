@@ -34,11 +34,12 @@ import { CSS } from "@dnd-kit/utilities";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
 import { GripHorizontalIcon } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useFieldArray, useForm, UseFormReturn } from "react-hook-form";
 import LoadingButton from "@/components/ui/loading-button";
 import { toast } from "sonner";
 import { useRouter, useSearchParams } from "next/navigation";
+import ProjectGenerateDialog from "./forms/project-generate-dialog";
 export default function ProjectsForm({
   resumeData,
   setResumeData,
@@ -99,14 +100,15 @@ export default function ProjectsForm({
   const { mutate, isPending } = useMutation({
     mutationFn: async (data: ProjectsValues) => {
       // Transform frontend format to backend format
-      const transformedProjects = data.projects?.map((project) => ({
-        name: project.title || "",
-        description: project.description || "",
-        technologies: [], // You might want to add a technologies field to the form
-        url: project.link || "",
-        start_date: project.startDate || "",
-        end_date: project.endDate || "",
-      })) || [];
+      const transformedProjects =
+        data.projects?.map((project) => ({
+          name: project.title || "",
+          description: project.description || "",
+          technologies: [], // You might want to add a technologies field to the form
+          url: project.link || "",
+          start_date: project.startDate || "",
+          end_date: project.endDate || "",
+        })) || [];
 
       const payload = {
         projects: transformedProjects,
@@ -145,7 +147,7 @@ export default function ProjectsForm({
         <p className="text-muted-foreground text-sm">Add your projects here.</p>
       </div>
       <Form {...form}>
-        <form 
+        <form
           className="space-y-3"
           onSubmit={form.handleSubmit((values) => mutate(values))}
         >
@@ -212,62 +214,35 @@ function ProjectsItem({ form, index, remove, id }: ProjectsItemProps) {
     transition,
     isDragging,
   } = useSortable({ id });
+  const [open, setOpen] = useState(false);
+
   return (
-    <div
-      className={cn(
-        "bg-background space-y-3 rounded-md border p-3",
-        isDragging && "relative z-100 cursor-grab shadow-xl"
-      )}
-      ref={setNodeRef}
-      style={{ transform: CSS.Transform.toString(transform), transition }}
-    >
-      <div className="flex justify-between gap-2">
-        <span className="font-semibold">Project {index + 1}</span>
-        <GripHorizontalIcon
-          className="text-muted-foreground size-5 cursor-grab focus:outline-none"
-          {...attributes}
-          {...listeners}
-        />
-      </div>
-      <FormField
-        control={form.control}
-        name={`projects.${index}.title`}
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Project Title</FormLabel>
-            <FormControl>
-              <Input {...field} autoFocus />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
+    <>
+    <ProjectGenerateDialog open={open} onClose={setOpen}/>
+      <div
+        className={cn(
+          "bg-background space-y-3 rounded-md border p-3",
+          isDragging && "relative z-100 cursor-grab shadow-xl"
         )}
-      />
-      <FormField
-        control={form.control}
-        name={`projects.${index}.link`}
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Project Link</FormLabel>
-            <FormControl>
-              <Input {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-      <div className="grid grid-cols-2 gap-3">
+        ref={setNodeRef}
+        style={{ transform: CSS.Transform.toString(transform), transition }}
+      >
+        <div className="flex justify-between gap-2">
+          <span className="font-semibold">Project {index + 1}</span>
+          <GripHorizontalIcon
+            className="text-muted-foreground size-5 cursor-grab focus:outline-none"
+            {...attributes}
+            {...listeners}
+          />
+        </div>
         <FormField
           control={form.control}
-          name={`projects.${index}.startDate`}
+          name={`projects.${index}.title`}
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Start Date</FormLabel>
+              <FormLabel>Project Title</FormLabel>
               <FormControl>
-                <Input
-                  {...field}
-                  type="date"
-                  value={field.value?.slice(0, 10)}
-                />
+                <Input {...field} autoFocus />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -275,50 +250,92 @@ function ProjectsItem({ form, index, remove, id }: ProjectsItemProps) {
         />
         <FormField
           control={form.control}
-          name={`projects.${index}.endDate`}
+          name={`projects.${index}.link`}
           render={({ field }) => (
             <FormItem>
-              <FormLabel>End Date</FormLabel>
+              <FormLabel>Project Link</FormLabel>
               <FormControl>
-                <Input
-                  {...field}
-                  type="date"
-                  value={field.value?.slice(0, 10)}
-                />
+                <Input {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-      </div>
-      <FormDescription>
-        Leave <span className="font-semibold">end date</span> empty if you are
-        currently working here.
-      </FormDescription>
-      <FormField
-        control={form.control}
-        name={`projects.${index}.description`}
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Decription</FormLabel>
-            <FormControl>
-              <Textarea {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-      <div className="flex justify-end">
+        <div className="grid grid-cols-2 gap-3">
+          <FormField
+            control={form.control}
+            name={`projects.${index}.startDate`}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Start Date</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    type="date"
+                    value={field.value?.slice(0, 10)}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name={`projects.${index}.endDate`}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>End Date</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    type="date"
+                    value={field.value?.slice(0, 10)}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        <FormDescription>
+          Leave <span className="font-semibold">end date</span> empty if you are
+          currently working here.
+        </FormDescription>
+        <FormField
+          control={form.control}
+          name={`projects.${index}.description`}
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Decription</FormLabel>
+              <FormControl>
+                <Textarea {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <div className="flex justify-end">
+          <Button
+            variant="destructive"
+            type="button"
+            onClick={() => {
+              remove(index);
+            }}
+          >
+            Remove
+          </Button>
+        </div>
         <Button
-          variant="destructive"
-          type="button"
           onClick={() => {
-            remove(index);
+            setOpen(true);
           }}
+          type="button"
+          className="w-full"
+          variant="outline"
         >
-          Remove
+          Smart fill from AI
         </Button>
       </div>
-    </div>
+    </>
   );
 }

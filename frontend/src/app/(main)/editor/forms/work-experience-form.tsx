@@ -14,7 +14,7 @@ import { EditorFormProps } from "@/lib/types";
 import { workExperienceSchema, WorkExperienceValues } from "@/lib/validations";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { GripHorizontalIcon } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useFieldArray, useForm, UseFormReturn } from "react-hook-form";
 import {
   closestCenter,
@@ -39,6 +39,7 @@ import LoadingButton from "@/components/ui/loading-button";
 import { useMutation } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
+import WorkExperienceGenerateDialog from "./work-experience-generate-dialog";
 
 export default function WorkExperienceForm({
   resumeData,
@@ -132,9 +133,9 @@ export default function WorkExperienceForm({
       newSearchParams.set("step", "education");
       router.push(`/editor?${newSearchParams.toString()}`);
     },
-    onError:()=>{
-        toast.error("Something went wrong.")
-    }
+    onError: () => {
+      toast.error("Something went wrong.");
+    },
   });
   return (
     <div className="mx-auto max-w-xl space-y-6">
@@ -217,63 +218,35 @@ function WorkExperienceItem({
     transition,
     isDragging,
   } = useSortable({ id });
+  const [open, setOpen] = useState(false);
   return (
-    <div
-      className={cn(
-        "bg-background space-y-3 rounded-md border p-3",
-        isDragging && "relative z-100 cursor-grab shadow-xl"
-      )}
-      ref={setNodeRef}
-      style={{ transform: CSS.Transform.toString(transform), transition }}
-    >
-      <div className="flex justify-between gap-2">
-        <span className="font-semibold">Work Experience {index + 1}</span>
-        <GripHorizontalIcon
-          className="text-muted-foreground size-5 cursor-grab focus:outline-none"
-          {...attributes}
-          {...listeners}
-        />
-      </div>
+    <>
+      <WorkExperienceGenerateDialog onClose={setOpen} open={open} />
+      <div
+        className={cn(
+          "bg-background space-y-3 rounded-md border p-3",
+          isDragging && "relative z-100 cursor-grab shadow-xl"
+        )}
+        ref={setNodeRef}
+        style={{ transform: CSS.Transform.toString(transform), transition }}
+      >
+        <div className="flex justify-between gap-2">
+          <span className="font-semibold">Work Experience {index + 1}</span>
+          <GripHorizontalIcon
+            className="text-muted-foreground size-5 cursor-grab focus:outline-none"
+            {...attributes}
+            {...listeners}
+          />
+        </div>
 
-      <FormField
-        control={form.control}
-        name={`workExperiences.${index}.position`}
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Job Title</FormLabel>
-            <FormControl>
-              <Input {...field} autoFocus />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-      <FormField
-        control={form.control}
-        name={`workExperiences.${index}.company`}
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Company Name</FormLabel>
-            <FormControl>
-              <Input {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-      <div className="grid grid-cols-2 gap-3">
         <FormField
           control={form.control}
-          name={`workExperiences.${index}.startDate`}
+          name={`workExperiences.${index}.position`}
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Start Date</FormLabel>
+              <FormLabel>Job Title</FormLabel>
               <FormControl>
-                <Input
-                  {...field}
-                  type="date"
-                  value={field.value?.slice(0, 10)}
-                />
+                <Input {...field} autoFocus />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -281,50 +254,94 @@ function WorkExperienceItem({
         />
         <FormField
           control={form.control}
-          name={`workExperiences.${index}.endDate`}
+          name={`workExperiences.${index}.company`}
           render={({ field }) => (
             <FormItem>
-              <FormLabel>End Date</FormLabel>
+              <FormLabel>Company Name</FormLabel>
               <FormControl>
-                <Input
-                  {...field}
-                  type="date"
-                  value={field.value?.slice(0, 10)}
-                />
+                <Input {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
+        <div className="grid grid-cols-2 gap-3">
+          <FormField
+            control={form.control}
+            name={`workExperiences.${index}.startDate`}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Start Date</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    type="date"
+                    value={field.value?.slice(0, 10)}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name={`workExperiences.${index}.endDate`}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>End Date</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    type="date"
+                    value={field.value?.slice(0, 10)}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        <FormDescription>
+          Leave <span className="font-semibold">end date</span> empty if you are
+          currently working here.
+        </FormDescription>
+        <FormField
+          control={form.control}
+          name={`workExperiences.${index}.description`}
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Decription</FormLabel>
+              <FormControl>
+                <Textarea {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <div>
+          <Button
+            onClick={() => {
+              setOpen(true);
+            }}
+            type="button"
+            className="w-full"
+            variant="outline"
+          >
+            Smart fill from AI
+          </Button>
+        </div>
+        <div className="flex justify-end">
+          <Button
+            variant="destructive"
+            type="button"
+            onClick={() => {
+              remove(index);
+            }}
+          >
+            Remove
+          </Button>
+        </div>
       </div>
-      <FormDescription>
-        Leave <span className="font-semibold">end date</span> empty if you are
-        currently working here.
-      </FormDescription>
-      <FormField
-        control={form.control}
-        name={`workExperiences.${index}.description`}
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Decription</FormLabel>
-            <FormControl>
-              <Textarea {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-      <div className="flex justify-end">
-        <Button
-          variant="destructive"
-          type="button"
-          onClick={() => {
-            remove(index);
-          }}
-        >
-          Remove
-        </Button>
-      </div>
-    </div>
+    </>
   );
 }
