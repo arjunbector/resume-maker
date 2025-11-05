@@ -30,9 +30,10 @@ export default function NavSignInButton() {
 
   const handleLogout = async () => {
     try {
-      // Clear the access token cookie
-      document.cookie =
-        "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/logout`, {
+        method: "POST",
+        credentials: "include",
+      });
 
       setIsLoggedIn(false);
       window.location.href = "/";
