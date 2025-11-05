@@ -9,6 +9,7 @@ import QuestionnaireForm from "./forms/questionnaire-form";
 import ProjectsForm from "./projects-form";
 import SkillsForm from "./skills";
 import WorkExperienceForm from "./forms/work-experience-form";
+import ResearchForm from "./research-form";
 
 export const steps: {
   title: string;
@@ -54,12 +55,12 @@ export const steps: {
     title: "Projects",
     component: ProjectsForm,
     key: "projects",
-},
-  // {
-  //   title: "Research Work",
-  //   component: ResearchForm,
-  //   key: "research-work",
-  // },
+  },
+  {
+    title: "Research Work",
+    component: ResearchForm,
+    key: "research-work",
+  },
   {
     title: "Skills",
     component: SkillsForm,

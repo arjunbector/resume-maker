@@ -27,13 +27,13 @@ function Hero() {
     <div className="w-full">
       <div className="container mx-auto">
         <div className="flex gap-8 py-20 lg:py-40 items-center justify-center flex-col">
-          <div>
+          {/* <div>
             <Link href="/resumes">
               <Button variant="secondary" size="sm" className="gap-4">
                 View existing resumes <MoveRight className="w-4 h-4" />
               </Button>
             </Link>
-          </div>
+          </div> */}
           <div className="flex gap-4 flex-col">
             <h1 className="text-5xl md:text-7xl max-w-2xl tracking-tighter text-center font-regular">
               <span className="text-spektr-cyan-50">Create your</span>

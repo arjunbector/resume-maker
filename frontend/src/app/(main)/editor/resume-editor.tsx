@@ -10,6 +10,8 @@ import Footer from "./footer";
 import { ResumeValues } from "@/lib/validations";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { transformApiResponseToResumeData } from "@/lib/transformers";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 
 // interface ResumeEditorProps {
 //   resumeToEdit: ResumeServerData | null;
@@ -31,6 +33,9 @@ export default function ResumeEditor() {
           },
         }
       );
+      if (!res.ok) {
+        throw new Error(`Failed to create session: ${res.statusText}`);
+      }
       const data = await res.json();
       return data.session_id;
     },
@@ -39,7 +44,9 @@ export default function ResumeEditor() {
       newSearchParams.set("resumeId", data);
       window.history.pushState(null, "", `?${newSearchParams.toString()}`);
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("Failed to create session:", error);
+      setHasInitialized(false); // Reset initialization flag on error
       router.push("/");
     },
   });
@@ -98,14 +105,16 @@ export default function ResumeEditor() {
   });
   console.log(resumeData);
   const [showSmResumePreview, setShowSmResumePreview] = useState(false);
+  const [hasInitialized, setHasInitialized] = useState(false);
 
   const resumeId = searchParams.get("resumeId");
+
   useEffect(() => {
     // Only create a new session if there's no resumeId in the URL
-    if (!resumeId) {
+    if (!resumeId && !mutation.isPending && !mutation.isSuccess) {
       mutation.mutate();
     }
-  }, []); // Empty dependency array to run only once on mount
+  }, [resumeId]); // Only depend on resumeId
 
   // Update resumeData when query data is available
   useEffect(() => {
@@ -131,8 +140,14 @@ export default function ResumeEditor() {
   )?.component;
 
   return (
-    <div className="flex h-full grow flex-col">
+    <div className="flex h-full grow flex-col relative">
       <header className="space-y-1.5 border-b px-3 py-5 text-center">
+        <Link
+          href="/resumes"
+          className="absolute left-0 top-4 p-2 m-2 rounded-lg transition-colors hover:bg-neutral-100"
+        >
+          <ArrowLeft />
+        </Link>
         <h1 className="text-2xl font-bold">Design Resume</h1>
         <p className="text-muted-foreground text-sm">
           Follow the steps below to create your resume, your progress will be
@@ -150,7 +165,9 @@ export default function ResumeEditor() {
             <BreadCrumbs currentStep={currentStep} setCurrentStep={setStep} />
             {isLoadingExistingResume ? (
               <div className="flex justify-center items-center h-64">
-                <div className="text-muted-foreground">Loading resume data...</div>
+                <div className="text-muted-foreground">
+                  Loading resume data...
+                </div>
               </div>
             ) : FormComponent ? (
               <FormComponent

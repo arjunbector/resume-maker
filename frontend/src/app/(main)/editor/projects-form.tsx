@@ -130,7 +130,7 @@ export default function ProjectsForm({
     onSuccess: () => {
       toast.success("Projects saved successfully");
       const newSearchParams = new URLSearchParams(searchParams);
-      newSearchParams.set("step", "skills");
+      newSearchParams.set("step", "research-work");
       router.push(`/editor?${newSearchParams.toString()}`);
     },
     onError: () => {

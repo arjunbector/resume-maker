@@ -1,11 +1,9 @@
 "use client";
 import ResumePreview from "@/components/resume-preview";
 import { Button } from "@/components/ui/button";
-import {
-  transformApiResponseToResumeData,
-  transformResumeDataToApiFormat,
-} from "@/lib/transformers";
+import { transformApiResponseToResumeData } from "@/lib/transformers";
 import { useQuery } from "@tanstack/react-query";
+import { formatDistanceToNow } from "date-fns";
 import { Loader2Icon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -52,6 +50,7 @@ export default function ResumesList() {
         ) : (
           data.map((res: any) => (
             <ResumeCard
+              key={res.session_id}
               resumeId={res.session_id}
               title={res.resume_metadata.resume_name}
               description={res.resume_metadata.resume_description}
@@ -76,13 +75,13 @@ function ResumeCard({ resumeId, title, description, resume }: ResumeCardProps) {
     contentRef,
     documentTitle: title || "Resume",
   });
-  // console.log("\\n\n\n\n\n\n\n\n\n\n\n\nin card:;", resume);
-  console.log(
-    "\\n\n\n\n\n\n\n\n\n\n\n\nin card:;",
-    transformApiResponseToResumeData(resume)
-  );
+  console.log("\\n\n\n\n\n\n\n\n\n\n\n\nin card:;", resume);
+  // console.log(
+  //   "\\n\n\n\n\n\n\n\n\n\n\n\nin card:;",
+  //   transformApiResponseToResumeData(resume)
+  // );
   return (
-    <div className="group hover:border-border bg-secondary relative rounded-lg border border-transparent p-3 transition-colors">
+    <div className="group hover:border-border bg-secondary relative rounded-lg border border-transparent p-3 transition-colors w-80">
       <div className="space-y-3">
         <Link
           href={`/editor?resumeId=${resumeId}`}
@@ -99,11 +98,14 @@ function ResumeCard({ resumeId, title, description, resume }: ResumeCardProps) {
         >
           <ResumePreview
             contentRef={contentRef}
-            resumeData={transformResumeDataToApiFormat(resume)}
+            resumeData={transformApiResponseToResumeData(resume)}
             className="overflow-hidden shadow-sm transition-shadow group-hover:shadow-lg"
           />
           <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-white to-transparent" />
         </Link>
+        {/* <div className="text-xs text-muted-foreground">
+          Last edited {formatDistanceToNow(new Date(resume.resume_metadata.last_active), { addSuffix: true })}
+        </div> */}
       </div>
     </div>
   );
